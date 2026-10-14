@@ -1,0 +1,12 @@
+[package]
+name = "shimeji-hook"
+version = "0.1.0"
+description = "Agent hook binary. Depends only on shimeji-proto."
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde_json = "=1.0.150"
+shimeji-proto = { workspace = true }

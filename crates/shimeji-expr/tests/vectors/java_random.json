@@ -1,0 +1,217 @@
+{
+  "source": "java.util.Random",
+  "jdk": "21.0.9",
+  "note": "Each named sequence is taken from a fresh Random(seed). nextDouble entries include IEEE-754 bits so a port can match bit-exactly.",
+  "seeds": [
+    {
+      "seed": 42,
+      "nextDouble": [
+        {
+          "decimal": "0.7275636800328681",
+          "bits": "3fe74833a06ff457"
+        },
+        {
+          "decimal": "0.6832234717598454",
+          "bits": "3fe5dcf778622e01"
+        },
+        {
+          "decimal": "0.30871945533265976",
+          "bits": "3fd3c20f3f12bbb4"
+        },
+        {
+          "decimal": "0.27707849007413665",
+          "bits": "3fd1bba76b52c856"
+        },
+        {
+          "decimal": "0.6655489517945736",
+          "bits": "3fe54c2d50bb0864"
+        },
+        {
+          "decimal": "0.9033722646721782",
+          "bits": "3fece86cf39c2cbe"
+        },
+        {
+          "decimal": "0.36878291341130565",
+          "bits": "3fd79a23a61b35c8"
+        },
+        {
+          "decimal": "0.2757480694417024",
+          "bits": "3fd1a5db3b0bfbe2"
+        },
+        {
+          "decimal": "0.46365357580915334",
+          "bits": "3fddac800c318574"
+        },
+        {
+          "decimal": "0.7829017787900358",
+          "bits": "3fe90d8807fc450f"
+        }
+      ],
+      "nextInt_100": [
+        30,
+        63,
+        48,
+        84,
+        70,
+        25,
+        5,
+        18,
+        19,
+        93
+      ],
+      "nextInt": [
+        -1170105035,
+        234785527,
+        -1360544799,
+        205897768,
+        1325939940,
+        -248792245,
+        1190043011,
+        -1255373459,
+        -1436456258,
+        392236186
+      ],
+      "nextInt_8": [
+        5,
+        0,
+        5,
+        0,
+        2,
+        7,
+        2,
+        5,
+        5,
+        0
+      ],
+      "nextInt_3": [
+        2,
+        0,
+        0,
+        2,
+        0,
+        1,
+        2,
+        2,
+        1,
+        2
+      ],
+      "nextBoolean": [
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        true,
+        true,
+        false
+      ]
+    },
+    {
+      "seed": 1,
+      "nextDouble": [
+        {
+          "decimal": "0.7308781907032909",
+          "bits": "3fe7635aa8cdc4e6"
+        },
+        {
+          "decimal": "0.41008081149220166",
+          "bits": "3fda3ec39684df98"
+        },
+        {
+          "decimal": "0.20771484130971707",
+          "bits": "3fca96666128d71c"
+        },
+        {
+          "decimal": "0.3327170559595112",
+          "bits": "3fd54b3c7a8ab85c"
+        },
+        {
+          "decimal": "0.9677559094241207",
+          "bits": "3feef7db3daf9843"
+        },
+        {
+          "decimal": "0.006117182265761301",
+          "bits": "3f790e549c66e000"
+        },
+        {
+          "decimal": "0.9637047970232077",
+          "bits": "3feed6ab7146d0db"
+        },
+        {
+          "decimal": "0.9398653887819098",
+          "bits": "3fee1360946ebd77"
+        },
+        {
+          "decimal": "0.9471949176631939",
+          "bits": "3fee4f6bb749a067"
+        },
+        {
+          "decimal": "0.9370821488959696",
+          "bits": "3fedfc93b3e58e11"
+        }
+      ],
+      "nextInt_100": [
+        85,
+        88,
+        47,
+        13,
+        54,
+        4,
+        34,
+        6,
+        78,
+        48
+      ],
+      "nextInt": [
+        -1155869325,
+        431529176,
+        1761283695,
+        1749940626,
+        892128508,
+        155629808,
+        1429008869,
+        -1465154083,
+        -138487339,
+        -1242363800
+      ],
+      "nextInt_8": [
+        5,
+        0,
+        3,
+        3,
+        1,
+        0,
+        2,
+        5,
+        7,
+        5
+      ],
+      "nextInt_3": [
+        0,
+        1,
+        1,
+        0,
+        2,
+        1,
+        2,
+        1,
+        1,
+        1
+      ],
+      "nextBoolean": [
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
+      ]
+    }
+  ]
+}

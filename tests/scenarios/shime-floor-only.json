@@ -1,0 +1,16 @@
+{
+  "name": "shime-floor-only",
+  "seed": 1,
+  "ticks": 3000,
+  "imageSet": "shime",
+  "screens": [
+    {
+      "id": "main",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "work": { "x": 0, "y": 25, "width": 1280, "height": 720 }
+    }
+  ]
+}

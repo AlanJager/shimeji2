@@ -1,0 +1,32 @@
+[package]
+name = "shimeji-macos"
+version = "0.1.0"
+description = "macOS shell. The only crate that may use platform APIs."
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+shimeji-app = { workspace = true }
+shimeji-core = { workspace = true }
+shimeji-packs = { workspace = true }
+shimeji-proto = { workspace = true }
+
+[dev-dependencies]
+shimeji-hook = { path = "../shimeji-hook" }
+
+# Platform crates stay target-specific so this package still resolves elsewhere.
+[target.'cfg(target_os = "macos")'.dependencies]
+# `exception` lets the spike catch an AppKit throw from a background `setFrameOrigin`.
+objc2 = { workspace = true, features = ["exception"] }
+objc2-app-kit = { workspace = true }
+objc2-quartz-core = { workspace = true }
+objc2-core-graphics = { workspace = true }
+objc2-core-foundation = "=0.3.2"
+objc2-application-services = { workspace = true }
+objc2-foundation = { workspace = true }
+objc2-service-management = { workspace = true }
+objc2-avf-audio = { workspace = true }
+# The spike's global mouse monitor takes a block. Same crate objc2-app-kit already uses.
+block2 = "=0.6.2"

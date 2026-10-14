@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Mascot>
+  <ActionList>
+    <Action Name="Idle" Type="Stay" BorderType="Floor">
+      <Animation>
+        <Pose Image="/stand.png" ImageAnchor="0,0" Velocity="0,0" Duration="7"/>
+        <Pose Image="/idle-2.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/idle-3.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/idle-4.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/idle-5.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/idle-6.png" ImageAnchor="0,0" Velocity="0,0" Duration="8"/>
+      </Animation>
+    </Action>
+    <Action Name="Dragged" Type="Stay" BorderType="Floor">
+      <Animation>
+        <Pose Image="/pinched-a.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/pinched-b.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/pinched-c.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/pinched-d.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/pinched-e.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/pinched-f.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/pinched-g.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/pinched-h.png" ImageAnchor="0,0" Velocity="0,0" Duration="6"/>
+      </Animation>
+    </Action>
+    <Action Name="WalkLeft" Type="Move" BorderType="Floor">
+      <Animation>
+        <Pose Image="/walk-a.png" ImageRight="/pinched-a.png" ImageAnchor="0,0" Velocity="-2,0" Duration="3"/>
+        <Pose Image="/walk-b.png" ImageRight="/pinched-b.png" ImageAnchor="0,0" Velocity="-2,0" Duration="3"/>
+        <Pose Image="/walk-3.png" ImageRight="/pinched-c.png" ImageAnchor="0,0" Velocity="-2,0" Duration="3"/>
+        <Pose Image="/walk-4.png" ImageRight="/pinched-d.png" ImageAnchor="0,0" Velocity="-2,0" Duration="3"/>
+        <Pose Image="/walk-5.png" ImageRight="/pinched-e.png" ImageAnchor="0,0" Velocity="-2,0" Duration="3"/>
+        <Pose Image="/walk-6.png" ImageRight="/pinched-f.png" ImageAnchor="0,0" Velocity="-2,0" Duration="3"/>
+        <Pose Image="/walk-7.png" ImageRight="/pinched-g.png" ImageAnchor="0,0" Velocity="-2,0" Duration="3"/>
+        <Pose Image="/walk-8.png" ImageRight="/pinched-h.png" ImageAnchor="0,0" Velocity="-2,0" Duration="6"/>
+      </Animation>
+    </Action>
+    <Action Name="Wave" Type="Animate">
+      <Animation>
+        <Pose Image="/wave-1.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/wave-2.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/wave-3.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/wave-4.png" ImageAnchor="0,0" Velocity="0,0" Duration="7"/>
+      </Animation>
+    </Action>
+    <Action Name="Jump" Type="Animate">
+      <Animation>
+        <Pose Image="/jump.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/jump-2.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/jump-3.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/fall.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/jump-5.png" ImageAnchor="0,0" Velocity="0,0" Duration="7"/>
+      </Animation>
+    </Action>
+    <Action Name="Failed" Type="Animate">
+      <Animation>
+        <Pose Image="/resist-a.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/resist-b.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/bounce-a.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/bounce-b.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/crawl-a.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/crawl-b.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/failed-7.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/lie.png" ImageAnchor="0,0" Velocity="0,0" Duration="6"/>
+      </Animation>
+    </Action>
+    <Action Name="Waiting" Type="Stay" BorderType="Floor">
+      <Animation>
+        <Pose Image="/sit.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/waiting-2.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/waiting-3.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/waiting-4.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/waiting-5.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/waiting-6.png" ImageAnchor="0,0" Velocity="0,0" Duration="7"/>
+      </Animation>
+    </Action>
+    <Action Name="Working" Type="Stay" BorderType="Floor">
+      <Animation>
+        <Pose Image="/dangle.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/working-2.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/working-3.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/working-4.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/working-5.png" ImageAnchor="0,0" Velocity="0,0" Duration="3"/>
+        <Pose Image="/working-6.png" ImageAnchor="0,0" Velocity="0,0" Duration="6"/>
+      </Animation>
+    </Action>
+    <Action Name="Review" Type="Animate">
+      <Animation>
+        <Pose Image="/spin.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/review-2.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/review-3.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/review-4.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/review-5.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/review-6.png" ImageAnchor="0,0" Velocity="0,0" Duration="7"/>
+      </Animation>
+    </Action>
+    <Action Name="Fall" Type="Stay" BorderType="Floor">
+      <Animation>
+        <Pose Image="/fall.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+      </Animation>
+    </Action>
+    <Action Name="Thrown" Type="Stay" BorderType="Floor">
+      <Animation>
+        <Pose Image="/fall.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+      </Animation>
+    </Action>
+    <Action Name="CursorFollow" Type="Stay">
+      <Animation>
+        <Pose Image="/look-0.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-1.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-2.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-3.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-4.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-5.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-6.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-7.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-8.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-9.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-10.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-11.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-12.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-13.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-14.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+        <Pose Image="/look-15.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+      </Animation>
+    </Action>
+    <Action Name="WalkRight" Type="Sequence">
+      <Action Type="Embedded" Class="Look" LookRight="true"/>
+      <ActionReference Name="WalkLeft"/>
+    </Action>
+  </ActionList>
+  <BehaviorList>
+    <Behavior Name="ChaseMouse" Action="Idle" Frequency="0"/>
+    <Behavior Name="Fall" Action="Fall" Frequency="0"/>
+    <Behavior Name="Dragged" Action="Dragged" Frequency="0"/>
+    <Behavior Name="Thrown" Action="Thrown" Frequency="0" Hidden="true"/>
+    <Condition Condition="#{mascot.environment.floor.isOn(mascot.anchor)}">
+      <Behavior Name="Idle" Action="Idle" Frequency="100"/>
+      <Behavior Name="WalkLeft" Action="WalkLeft" Frequency="50"/>
+      <Behavior Name="WalkRight" Action="WalkRight" Frequency="50"/>
+      <Behavior Name="Wave" Action="Wave" Frequency="10"/>
+      <Behavior Name="Jump" Action="Jump" Frequency="10"/>
+      <Behavior Name="Waiting" Action="Waiting" Frequency="20"/>
+      <Behavior Name="Working" Action="Working" Frequency="10"/>
+      <Behavior Name="Review" Action="Review" Frequency="10"/>
+      <Behavior Name="Failed" Action="Failed" Frequency="5"/>
+      <Behavior Name="CursorFollow" Action="CursorFollow" Frequency="30"/>
+    </Condition>
+  </BehaviorList>
+</Mascot>

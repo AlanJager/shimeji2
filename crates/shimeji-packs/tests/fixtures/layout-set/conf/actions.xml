@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Mascot>
+  <ActionList>
+    <Action Name="Sit" Type="Stay" BornBehaviour="Sit" RegistanceX="1">
+      <Animation>
+        <Pose Image="/p.png" ImageAnchor="3,4" Velocity="0,0" Duration="2"/>
+      </Animation>
+    </Action>
+  </ActionList>
+</Mascot>

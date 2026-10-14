@@ -1,0 +1,25 @@
+{
+  "name": "shime-offscreen-teleport",
+  "seed": 1,
+  "ticks": 3000,
+  "imageSet": "shime",
+  "screens": [
+    {
+      "id": "main",
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 400,
+      "work": { "x": 0, "y": 20, "width": 400, "height": 360 }
+    }
+  ],
+  "cursor": [
+    { "tick": 0, "x": 80, "y": 200 },
+    { "tick": 250, "x": 80, "y": 200 },
+    { "tick": 320, "x": 520, "y": 200 }
+  ],
+  "mouse": [
+    { "tick": 250, "type": "press", "button": "left" },
+    { "tick": 400, "type": "release", "button": "left" }
+  ]
+}

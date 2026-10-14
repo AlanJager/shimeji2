@@ -1,0 +1,8 @@
+* text=auto eol=lf
+
+# Upstream fixtures and license texts must preserve their original bytes.
+assets/packs/shime/** -text -whitespace
+packaging/licenses/** -text -whitespace
+# Serialized regression traces and reproduced notices may contain meaningful tabs/spaces.
+tests/golden/** -text -whitespace
+packaging/THIRD-PARTY-NOTICES.md -whitespace

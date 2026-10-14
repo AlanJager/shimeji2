@@ -1,0 +1,25 @@
+{
+  "name": "shime-drag-throw",
+  "seed": 1,
+  "ticks": 3000,
+  "imageSet": "shime",
+  "screens": [
+    {
+      "id": "main",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "work": { "x": 0, "y": 25, "width": 1280, "height": 720 }
+    }
+  ],
+  "cursor": [
+    { "tick": 0, "x": 200, "y": 400 },
+    { "tick": 400, "x": 200, "y": 400 },
+    { "tick": 460, "x": 560, "y": 280 }
+  ],
+  "mouse": [
+    { "tick": 400, "type": "press", "button": "left" },
+    { "tick": 460, "type": "release", "button": "left" }
+  ]
+}

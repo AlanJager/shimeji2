@@ -1,0 +1,23 @@
+{
+  "name": "shime-window-drag-up",
+  "seed": 1,
+  "ticks": 3000,
+  "imageSet": "shime",
+  "screens": [
+    {
+      "id": "main",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "work": { "x": 0, "y": 25, "width": 1280, "height": 720 }
+    }
+  ],
+  "activeWindow": [
+    { "tick": 0, "visible": true, "x": 0, "y": 500, "width": 1280, "height": 200 },
+    { "tick": 500, "visible": true, "x": 0, "y": 500, "width": 1280, "height": 200 },
+    { "tick": 515, "visible": true, "x": 0, "y": 350, "width": 1280, "height": 200 },
+    { "tick": 516, "visible": true, "x": 0, "y": 329, "width": 1280, "height": 200 },
+    { "tick": 517, "visible": true, "x": 0, "y": 248, "width": 1280, "height": 200 }
+  ]
+}

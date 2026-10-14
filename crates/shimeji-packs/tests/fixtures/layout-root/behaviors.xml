@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Mascot>
+  <BehaviorList>
+    <Behavior Name="ChaseMouse" Action="Sit" Frequency="0"/>
+    <Behavior Name="Fall" Action="Sit" Frequency="0"/>
+    <Behavior Name="Dragged" Action="Sit" Frequency="0"/>
+    <Behavior Name="Thrown" Action="Sit" Frequency="0"/>
+  </BehaviorList>
+</Mascot>

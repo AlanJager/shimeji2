@@ -1,0 +1,16 @@
+{
+  "name": "shime-breed-limit",
+  "seed": 1,
+  "ticks": 3000,
+  "imageSet": "shime",
+  "screens": [
+    {
+      "id": "main",
+      "x": 0,
+      "y": 0,
+      "width": 960,
+      "height": 600,
+      "work": { "x": 0, "y": 30, "width": 960, "height": 540 }
+    }
+  ]
+}

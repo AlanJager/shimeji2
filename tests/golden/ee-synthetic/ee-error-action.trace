@@ -1,0 +1,13 @@
+# scenario	ee-error-action
+# seed	1
+# ticks	3000
+# engine	DalekCraft2/Shimeji-Desktop
+# commit	54f71e8f065ed33bb054d34a2c952c06c93ffd6a
+# script-engine	org.openjdk.nashorn.api.scripting.NashornScriptEngine
+# nashorn	15.7
+# jdk	21.0.9
+# rng-counter	shared-after-tick
+T	0	mascot1	Stand	Stand	-4000	-4000	/body.png	false	2
+T	1	mascot1	Stand	Stand	-4000	-4000	/body.png	false	2
+T	2	mascot1	Stand	Stand	-4000	-4000	/body.png	false	2
+T	3	mascot1	Bad	Bad	-4000	-4000	/body.png	false	3

@@ -1,0 +1,232 @@
+# One line per classic frame. Slot contact rules for the group prompts live with these.
+
+[[pose]]
+index = 1
+name = "stand"
+text = "Standing still, relaxed. Feet on the bottom edge."
+
+[[pose]]
+index = 2
+name = "walk-a"
+text = "Walking, left foot forward. Feet on the bottom edge. Not a copy of the other walk frame."
+
+[[pose]]
+index = 3
+name = "walk-b"
+text = "Walking, right foot forward. Feet on the bottom edge. The opposite step from the other walk frame."
+
+[[pose]]
+index = 4
+name = "fall"
+text = "Falling, body tilted, sleeves and hair up. Feet off the ground."
+
+[[pose]]
+index = 5
+name = "resist-a"
+text = "Held and protesting, waving one way. Feet hang free."
+
+[[pose]]
+index = 6
+name = "resist-b"
+text = "Held and protesting, waving the other way. Feet hang free."
+
+[[pose]]
+index = 7
+name = "pinched-a"
+text = "Hanging straight down from a pinch at the top of the head. The top of the head touches the top edge."
+
+[[pose]]
+index = 8
+name = "pinched-b"
+text = "Hanging and swinging left. The top of the head touches the top edge."
+
+[[pose]]
+index = 9
+name = "pinched-c"
+text = "Hanging and swinging right. The top of the head touches the top edge."
+
+[[pose]]
+index = 10
+name = "pinched-d"
+text = "Hanging and dangling. The top of the head touches the top edge."
+
+[[pose]]
+index = 11
+name = "sit"
+text = "Sitting on the ground, looking ahead. Seat on the bottom edge. The body stays still through the head turn."
+
+[[pose]]
+index = 12
+name = "climb-a"
+text = "Clinging to a wall on the right side of the cell. Hands and feet toward the right edge."
+
+[[pose]]
+index = 13
+name = "wall-grab"
+text = "Grabbing the wall, body close to the right edge."
+
+[[pose]]
+index = 14
+name = "climb-b"
+text = "Climbing one step up the wall, still against the right edge."
+
+[[pose]]
+index = 15
+name = "spin-a"
+text = "Seated, head turned up-left. Only the head moves. Seat on the bottom edge."
+
+[[pose]]
+index = 16
+name = "spin-b"
+text = "Seated, head turned left. Only the head moves. Seat on the bottom edge."
+
+[[pose]]
+index = 17
+name = "spin-c"
+text = "Seated, head turned down-left. Only the head moves. Seat on the bottom edge."
+
+[[pose]]
+index = 18
+name = "bounce-a"
+text = "Low bounce, body near the bottom edge."
+
+[[pose]]
+index = 19
+name = "bounce-b"
+text = "Rising out of the bounce."
+
+[[pose]]
+index = 20
+name = "crawl-a"
+text = "Crawling, arms reaching forward. Body on the bottom edge."
+
+[[pose]]
+index = 21
+name = "crawl-b"
+text = "Crawling, pulling the body forward. Body on the bottom edge."
+
+[[pose]]
+index = 22
+name = "jump"
+text = "Jumping, one knee raised. Feet off the ground."
+
+[[pose]]
+index = 23
+name = "ceiling-grab"
+text = "Hanging from the ceiling. Hands on the top edge, body dangling."
+
+[[pose]]
+index = 24
+name = "ceiling-a"
+text = "Swinging from the ceiling to one side. Hands stay on the top edge."
+
+[[pose]]
+index = 25
+name = "ceiling-b"
+text = "Swinging from the ceiling to the other side. Hands stay on the top edge."
+
+[[pose]]
+index = 26
+name = "sit-look-up"
+text = "Sitting, looking up. Seat on the bottom edge."
+
+[[pose]]
+index = 27
+name = "spin-up-a"
+text = "Seated, head turned down. Only the head moves. Seat on the bottom edge."
+
+[[pose]]
+index = 28
+name = "spin-up-b"
+text = "Seated, head turned down-right. Only the head moves. Seat on the bottom edge."
+
+[[pose]]
+index = 29
+name = "spin-up-c"
+text = "Seated, head turned right. Only the head moves. Seat on the bottom edge."
+
+[[pose]]
+index = 30
+name = "sit-relaxed"
+text = "Sitting on a ledge, legs together. The seat is about an eighth of the cell up from the bottom; the legs hang below it."
+
+[[pose]]
+index = 31
+name = "dangle-a"
+text = "Sitting on a ledge, legs swinging forward. Same seat line."
+
+[[pose]]
+index = 32
+name = "dangle-b"
+text = "Sitting on a ledge, legs swinging back. Same seat line."
+
+[[pose]]
+index = 33
+name = "dangle-c"
+text = "Sitting on a ledge, legs swinging forward again. Same seat line."
+
+[[pose]]
+index = 34
+name = "carry-a"
+text = "Walking while carrying something overhead. Feet on the bottom edge. The carried object is clipped in later; do not draw it."
+
+[[pose]]
+index = 35
+name = "carry-b"
+text = "The other step of that walk. Feet on the bottom edge. Do not draw the carried object."
+
+[[pose]]
+index = 36
+name = "carry-c"
+text = "Carrying while falling. Do not draw the carried object."
+
+[[pose]]
+index = 37
+name = "throw"
+text = "Throwing, a forward flick. Feet on the bottom edge. Do not draw the object."
+
+[[pose]]
+index = 38
+name = "pullout-1"
+text = "Pulling a companion up: only their head and shoulders above the bottom edge. No ground mound."
+
+[[pose]]
+index = 39
+name = "pullout-2"
+text = "Pulling: the companion is up to the waist. No ground mound."
+
+[[pose]]
+index = 40
+name = "pullout-3"
+text = "Pulling: the companion is up to the knees. No ground mound."
+
+[[pose]]
+index = 41
+name = "pullout-4"
+text = "Pulling: the companion is out and finding their balance. No ground mound."
+
+[[pose]]
+index = 42
+name = "split-1"
+text = "Splitting apart, two copies of the standing pose just separating. Derived from the standing frame."
+
+[[pose]]
+index = 43
+name = "split-2"
+text = "Splitting, the copies further apart."
+
+[[pose]]
+index = 44
+name = "split-3"
+text = "Splitting, the copies near the sides of the cell."
+
+[[pose]]
+index = 45
+name = "split-4"
+text = "Splitting, the copies at the edges."
+
+[[pose]]
+index = 46
+name = "split-5"
+text = "Splitting, the copies fully apart."
+

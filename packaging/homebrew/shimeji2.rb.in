@@ -1,0 +1,22 @@
+# not run: needs a Developer ID
+#
+# Cask for a project tap (a repository named homebrew-shimeji2), not homebrew-cask.
+# Template only: replace @VERSION@ and @DMG_SHA256@ after a signed release.
+# Do not install or publish this template as a live cask.
+cask "shimeji2" do
+  version "@VERSION@"
+  sha256 "@DMG_SHA256@"
+
+  url "https://github.com/AlanJager/shimeji2/releases/download/v#{version}/shimeji2-#{version}.dmg"
+  name "shimeji2"
+  desc "Native macOS Shimeji runner"
+  homepage "https://github.com/AlanJager/shimeji2"
+
+  depends_on macos: ">= :sonoma"
+
+  app "shimeji2.app"
+
+  zap trash: [
+    "~/Library/Application Support/shimeji2",
+  ]
+end

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- zlib. License: tests/fixtures/ee-synthetic/LICENSE.txt. Placeholder art, not a third-party pack. -->
+<Mascot>
+  <ActionList>
+    <Action Name="ChaseMouse" Type="Stay">
+      <Animation>
+        <Pose Image="/body.png" ImageAnchor="4,8" Velocity="0,0" Duration="1"/>
+      </Animation>
+    </Action>
+    <Action Name="Fall" Type="Embedded" Class="com.group_finity.mascot.action.Fall">
+      <Animation>
+        <Pose Image="/body.png" ImageAnchor="4,8" Velocity="0,0" Duration="1"/>
+      </Animation>
+    </Action>
+    <Action Name="Dragged" Type="Stay">
+      <Animation>
+        <Pose Image="/body.png" ImageAnchor="4,8" Velocity="0,0" Duration="1"/>
+      </Animation>
+    </Action>
+    <Action Name="Thrown" Type="Stay">
+      <Animation>
+        <Pose Image="/body.png" ImageAnchor="4,8" Velocity="0,0" Duration="1"/>
+      </Animation>
+    </Action>
+    <Action Name="Stand" Type="Stay" Duration="1">
+      <Animation>
+        <Pose Image="/body.png" ImageAnchor="4,8" Velocity="0,0" Duration="1"/>
+      </Animation>
+    </Action>
+  </ActionList>
+</Mascot>

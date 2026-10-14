@@ -1,0 +1,16 @@
+{
+  "name": "ee-error-action",
+  "seed": 1,
+  "ticks": 3000,
+  "imageSet": "Err",
+  "screens": [
+    {
+      "id": "main",
+      "x": -4500,
+      "y": 0,
+      "width": 6000,
+      "height": 800,
+      "work": { "x": -4500, "y": 25, "width": 6000, "height": 720 }
+    }
+  ]
+}

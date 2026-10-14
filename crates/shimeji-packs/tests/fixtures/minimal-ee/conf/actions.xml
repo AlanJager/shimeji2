@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Mascot>
+  <ActionList>
+    <Action Name="Sit" Type="Stay" BorderType="Floor" RegistanceX="0.1" ResistanceY="0.2">
+      <Animation>
+        <Pose Image="/a.png" ImageAnchor="0,0" Velocity="0,0" Duration="4"/>
+      </Animation>
+    </Action>
+    <Action Name="Shared" Type="Stay">
+      <Animation>
+        <Pose Image="/a.png" ImageAnchor="0,0" Velocity="0,0" Duration="1"/>
+      </Animation>
+    </Action>
+  </ActionList>
+</Mascot>

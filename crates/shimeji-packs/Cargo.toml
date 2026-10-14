@@ -1,0 +1,29 @@
+[package]
+name = "shimeji-packs"
+version = "0.1.0"
+description = "Pack loaders and export. Pure Rust dependencies only."
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+encoding_rs = "0.8.35"
+flate2 = { version = "1.1.1", default-features = false, features = ["rust_backend"] }
+png = "=0.18.1"
+quick-xml = "0.41.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "=1.0.150"
+shimeji-core = { workspace = true }
+unicode-normalization = "0.1.25"
+# zip 6.0 keeps MSRV 1.83 (zip 8 needs 1.88). `deflate-flate2` is the deflate
+# reader only; the backend is flate2's pure-Rust miniz_oxide (`rust_backend`),
+# not zlib or zlib-ng. bzip2, lzma, zstd and xz stay off.
+zip = { version = "=6.0.0", default-features = false, features = ["deflate-flate2"] }
+
+[dev-dependencies]
+encoding_rs = "0.8.35"
+png = "=0.18.1"
+flate2 = { version = "1.1.1", default-features = false, features = ["rust_backend"] }
+sha2 = "0.11"
+shimeji-core = { workspace = true, features = ["testing"] }

@@ -1,0 +1,24 @@
+# Behavior and action names for an agent state, first match in the pack wins.
+# No match means the pet only shows the badge.
+#
+# japanese: bundled shime. The sit behavior is 座ってボーっとする. The jump
+# action is ジャンプ. Trip is 転ぶ.
+# english: Codex profile rows first (Working, Waiting, Failed, Jump, Wave,
+# Review, Idle), then the Shimeji-ee template (SitDown, SitWhileDanglingLegs,
+# Tripping, Jumping, StandUp).
+
+[japanese]
+working = ["座ってボーっとする", "座る"]
+waiting = ["座って足をぶらぶらさせる", "座ってマウスのほうを見る"]
+failed = ["転ぶ"]
+done = ["ジャンプ"]
+review = []
+idle = ["立ってボーっとする", "立つ"]
+
+[english]
+working = ["Working", "SitDown", "Sit"]
+waiting = ["Waiting", "SitWhileDanglingLegs", "SitAndFaceMouse"]
+failed = ["Failed", "Tripping"]
+done = ["Jump", "Wave", "Jumping"]
+review = ["Review"]
+idle = ["Idle", "StandUp"]

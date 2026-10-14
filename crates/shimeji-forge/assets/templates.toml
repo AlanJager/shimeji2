@@ -1,0 +1,602 @@
+# Measured from assets/packs/shime/img by shimeji-forge.
+# Bounding box and contact edge are the PNG alpha. Anchors are shime's primary anchors.
+# cell = 128
+
+[[frame]]
+index = 1
+name = "stand"
+x = 20
+y = 1
+w = 91
+h = 127
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 33
+
+[[frame]]
+index = 2
+name = "walk-a"
+x = 18
+y = 3
+w = 91
+h = 125
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 33
+
+[[frame]]
+index = 3
+name = "walk-b"
+x = 19
+y = 2
+w = 91
+h = 126
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 31
+
+[[frame]]
+index = 4
+name = "fall"
+x = 5
+y = 0
+w = 106
+h = 112
+contact = "bottom"
+contact_at = 112
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 67
+
+[[frame]]
+index = 5
+name = "resist-a"
+x = 18
+y = 1
+w = 92
+h = 122
+contact = "bottom"
+contact_at = 123
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 35
+
+[[frame]]
+index = 6
+name = "resist-b"
+x = 19
+y = 1
+w = 91
+h = 124
+contact = "bottom"
+contact_at = 125
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 31
+
+[[frame]]
+index = 7
+name = "pinched-a"
+x = 17
+y = 1
+w = 92
+h = 120
+contact = "bottom"
+contact_at = 121
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 39
+
+[[frame]]
+index = 8
+name = "pinched-b"
+x = 20
+y = 1
+w = 92
+h = 116
+contact = "bottom"
+contact_at = 117
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 33
+
+[[frame]]
+index = 9
+name = "pinched-c"
+x = 9
+y = 0
+w = 96
+h = 112
+contact = "bottom"
+contact_at = 112
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 38
+
+[[frame]]
+index = 10
+name = "pinched-d"
+x = 21
+y = 1
+w = 106
+h = 103
+contact = "right"
+contact_at = 127
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 36
+
+[[frame]]
+index = 11
+name = "sit"
+x = 24
+y = 22
+w = 91
+h = 106
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 35
+
+[[frame]]
+index = 12
+name = "climb-a"
+x = 30
+y = 1
+w = 88
+h = 110
+contact = "bottom"
+contact_at = 111
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 37
+
+[[frame]]
+index = 13
+name = "wall-grab"
+x = 31
+y = 1
+w = 87
+h = 112
+contact = "bottom"
+contact_at = 113
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 40
+
+[[frame]]
+index = 14
+name = "climb-b"
+x = 30
+y = 0
+w = 89
+h = 110
+contact = "bottom"
+contact_at = 110
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 38
+
+[[frame]]
+index = 15
+name = "spin-a"
+x = 25
+y = 16
+w = 88
+h = 112
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 38
+
+[[frame]]
+index = 16
+name = "spin-b"
+x = 31
+y = 13
+w = 77
+h = 115
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 42
+
+[[frame]]
+index = 17
+name = "spin-c"
+x = 28
+y = 14
+w = 85
+h = 114
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 38
+
+[[frame]]
+index = 18
+name = "bounce-a"
+x = 0
+y = 73
+w = 125
+h = 55
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 28
+
+[[frame]]
+index = 19
+name = "bounce-b"
+x = 13
+y = 27
+w = 92
+h = 81
+contact = "bottom"
+contact_at = 108
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 40
+
+[[frame]]
+index = 20
+name = "crawl-a"
+x = 0
+y = 73
+w = 124
+h = 55
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 30
+
+[[frame]]
+index = 21
+name = "crawl-b"
+x = 0
+y = 73
+w = 125
+h = 55
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 28
+
+[[frame]]
+index = 22
+name = "jump"
+x = 20
+y = 1
+w = 88
+h = 103
+contact = "bottom"
+contact_at = 104
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 28
+
+[[frame]]
+index = 23
+name = "ceiling-grab"
+x = 1
+y = 19
+w = 114
+h = 93
+contact = "top"
+contact_at = 19
+anchor_x = 64
+anchor_y = 48
+head_to_eye = 45
+
+[[frame]]
+index = 24
+name = "ceiling-a"
+x = 1
+y = 20
+w = 114
+h = 93
+contact = "top"
+contact_at = 20
+anchor_x = 64
+anchor_y = 48
+head_to_eye = 43
+
+[[frame]]
+index = 25
+name = "ceiling-b"
+x = 1
+y = 19
+w = 124
+h = 92
+contact = "top"
+contact_at = 19
+anchor_x = 64
+anchor_y = 48
+head_to_eye = 44
+
+[[frame]]
+index = 26
+name = "sit-look-up"
+x = 24
+y = 20
+w = 90
+h = 108
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 33
+
+[[frame]]
+index = 27
+name = "spin-up-a"
+x = 29
+y = 14
+w = 81
+h = 114
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 38
+
+[[frame]]
+index = 28
+name = "spin-up-b"
+x = 30
+y = 13
+w = 79
+h = 115
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 44
+
+[[frame]]
+index = 29
+name = "spin-up-c"
+x = 25
+y = 19
+w = 91
+h = 109
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 42
+
+[[frame]]
+index = 30
+name = "sit-relaxed"
+x = 20
+y = 8
+w = 91
+h = 108
+contact = "bottom"
+contact_at = 116
+anchor_x = 64
+anchor_y = 112
+head_to_eye = 37
+
+[[frame]]
+index = 31
+name = "dangle-a"
+x = 20
+y = 8
+w = 91
+h = 120
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 112
+head_to_eye = 38
+
+[[frame]]
+index = 32
+name = "dangle-b"
+x = 20
+y = 8
+w = 91
+h = 117
+contact = "bottom"
+contact_at = 125
+anchor_x = 64
+anchor_y = 112
+head_to_eye = 38
+
+[[frame]]
+index = 33
+name = "dangle-c"
+x = 20
+y = 8
+w = 91
+h = 118
+contact = "bottom"
+contact_at = 126
+anchor_x = 64
+anchor_y = 112
+head_to_eye = 38
+
+[[frame]]
+index = 34
+name = "carry-a"
+x = 21
+y = 6
+w = 85
+h = 122
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 58
+
+[[frame]]
+index = 35
+name = "carry-b"
+x = 21
+y = 6
+w = 85
+h = 122
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 58
+
+[[frame]]
+index = 36
+name = "carry-c"
+x = 21
+y = 6
+w = 85
+h = 122
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 58
+
+[[frame]]
+index = 37
+name = "throw"
+x = 14
+y = 6
+w = 92
+h = 122
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 35
+
+[[frame]]
+index = 38
+name = "pullout-1"
+x = 35
+y = 6
+w = 92
+h = 122
+contact = "bottom"
+contact_at = 128
+anchor_x = 96
+anchor_y = 128
+head_to_eye = 35
+
+[[frame]]
+index = 39
+name = "pullout-2"
+x = 35
+y = 23
+w = 92
+h = 105
+contact = "bottom"
+contact_at = 128
+anchor_x = 96
+anchor_y = 128
+head_to_eye = 35
+
+[[frame]]
+index = 40
+name = "pullout-3"
+x = 30
+y = 16
+w = 97
+h = 112
+contact = "bottom"
+contact_at = 128
+anchor_x = 96
+anchor_y = 128
+head_to_eye = 35
+
+[[frame]]
+index = 41
+name = "pullout-4"
+x = 19
+y = 12
+w = 108
+h = 116
+contact = "bottom"
+contact_at = 128
+anchor_x = 96
+anchor_y = 128
+head_to_eye = 35
+
+[[frame]]
+index = 42
+name = "split-1"
+x = 16
+y = 1
+w = 99
+h = 127
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 33
+
+[[frame]]
+index = 43
+name = "split-2"
+x = 12
+y = 1
+w = 107
+h = 127
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 33
+
+[[frame]]
+index = 44
+name = "split-3"
+x = 8
+y = 1
+w = 115
+h = 127
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 33
+
+[[frame]]
+index = 45
+name = "split-4"
+x = 4
+y = 1
+w = 121
+h = 127
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 33
+
+[[frame]]
+index = 46
+name = "split-5"
+x = 0
+y = 1
+w = 128
+h = 127
+contact = "bottom"
+contact_at = 128
+anchor_x = 64
+anchor_y = 128
+head_to_eye = 33
+

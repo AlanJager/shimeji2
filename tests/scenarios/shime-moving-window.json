@@ -1,0 +1,20 @@
+{
+  "name": "shime-moving-window",
+  "seed": 1,
+  "ticks": 3000,
+  "imageSet": "shime",
+  "screens": [
+    {
+      "id": "main",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "work": { "x": 0, "y": 25, "width": 1280, "height": 720 }
+    }
+  ],
+  "activeWindow": [
+    { "tick": 0, "visible": true, "x": 0, "y": 500, "width": 1280, "height": 200 },
+    { "tick": 240, "visible": true, "x": 0, "y": 260, "width": 1280, "height": 200 }
+  ]
+}

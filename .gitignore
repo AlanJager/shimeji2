@@ -1,0 +1,20 @@
+/target
+/corpus/*
+!/corpus/manifest.toml
+!/corpus/README.md
+.DS_Store
+
+# rustfmt backups
+**/*.rs.bk
+
+# Shimeji-Desktop checkout (separate project; fetch with tools/ee-reference/fetch.sh)
+/tools/ee-reference/vendor/
+/tools/ee-reference/.gradle/
+/tools/ee-reference/build/
+/tools/ee-reference/run/
+__pycache__/
+*.pyc
+.claude/
+/tools/shimeji4mac/
+
+/output/

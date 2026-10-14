@@ -1,0 +1,37 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/shimeji-expr",
+    "crates/shimeji-core",
+    "crates/shimeji-packs",
+    "crates/shimeji-app",
+    "crates/shimeji-proto",
+    "crates/shimeji-macos",
+    "crates/shimeji-hook",
+    "crates/shimeji-forge",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Zlib"
+publish = false
+rust-version = "1.85"
+
+[workspace.dependencies]
+shimeji-expr = { path = "crates/shimeji-expr" }
+shimeji-core = { path = "crates/shimeji-core" }
+shimeji-packs = { path = "crates/shimeji-packs" }
+shimeji-app = { path = "crates/shimeji-app" }
+shimeji-proto = { path = "crates/shimeji-proto" }
+
+# Exact current crates.io versions as of 2026-09-30.
+# Only shimeji-macos may depend on these, and only on macOS.
+objc2 = "=0.6.4"
+objc2-app-kit = "=0.3.2"
+objc2-quartz-core = "=0.3.2"
+objc2-core-graphics = "=0.3.2"
+objc2-application-services = "=0.3.2"
+objc2-foundation = "=0.3.2"
+objc2-service-management = "=0.3.2"
+objc2-avf-audio = "=0.3.2"

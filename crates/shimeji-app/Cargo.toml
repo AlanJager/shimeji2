@@ -1,0 +1,20 @@
+[package]
+name = "shimeji-app"
+version = "0.1.0"
+description = "Settings, library, window rules, journal, agent state, and runtime."
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "=1.0.150"
+sha2 = "=0.11.0"
+shimeji-core = { workspace = true }
+shimeji-packs = { workspace = true }
+shimeji-proto = { workspace = true }
+toml_edit = "=0.22.27"
+
+[dev-dependencies]
+png = "=0.18.1"

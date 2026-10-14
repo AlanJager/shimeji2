@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- zlib. License: tests/fixtures/ee-synthetic/LICENSE.txt. Placeholder art, not a third-party pack. -->
+<Mascot>
+  <BehaviorList>
+    <Behavior Name="ChaseMouse" Frequency="0" Hidden="true"/>
+    <Behavior Name="Fall" Frequency="0" Hidden="true"/>
+    <Behavior Name="Dragged" Frequency="0" Hidden="true"/>
+    <Behavior Name="Thrown" Frequency="0" Hidden="true"/>
+    <Behavior Name="Stand" Frequency="1"/>
+    <Behavior Name="Boom" Frequency="100" Condition="#{null.foo}"/>
+  </BehaviorList>
+</Mascot>

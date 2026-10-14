@@ -1,0 +1,12 @@
+# Read by scripts/bundle.sh and scripts/check-entitlements.sh.
+# Release and dev ids stay different so each has its own Accessibility entry.
+
+name = "shimeji2"
+display_name = "shimeji2"
+release_bundle_id = "ai.shimeji2.macos"
+dev_bundle_id = "ai.shimeji2.macos.dev"
+executable = "shimeji-macos"
+hook = "shimeji-hook"
+pack = "assets/packs/shime"
+checksums = "assets/packs/shime/CHECKSUMS.sha256"
+min_macos = "14.0"

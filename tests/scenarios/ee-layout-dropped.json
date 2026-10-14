@@ -1,0 +1,26 @@
+{
+  "name": "ee-layout-dropped",
+  "seed": 1,
+  "ticks": 3000,
+  "imageSet": "dot",
+  "screens": [
+    {
+      "id": "main",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "work": { "x": 0, "y": 25, "width": 1280, "height": 720 }
+    }
+  ],
+  "cursor": [
+    { "tick": 0, "x": 300, "y": 400 },
+    { "tick": 40, "x": 300, "y": 400 },
+    { "tick": 70, "x": 660, "y": 400 },
+    { "tick": 120, "x": 660, "y": 400 }
+  ],
+  "mouse": [
+    { "tick": 40, "type": "press", "button": "left" },
+    { "tick": 120, "type": "release", "button": "left" }
+  ]
+}
