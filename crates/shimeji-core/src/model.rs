@@ -493,8 +493,9 @@ pub struct Pose {
 pub struct ResolvedImage {
     /// Attribute text, such as `/shime1.png`.
     pub source: String,
-    /// NFC path relative to the image-set root. This is the on-disk name,
-    /// which can differ in case from `source`.
+    /// NFC path relative to the image-set root, with the on-disk case, which
+    /// can differ from `source`. Where the file system keeps NFC and NFD apart
+    /// (ext4, unlike APFS), the stored name can be the NFD form.
     pub relative: String,
     /// IHDR pixel size. Zero when the header cannot be read. A missing file is `None`.
     pub width: i32,

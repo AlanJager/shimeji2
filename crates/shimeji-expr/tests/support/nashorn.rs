@@ -65,7 +65,10 @@ fn check_case(case: &serde_json::Value) -> Option<String> {
             let got = value.as_number().unwrap().to_bits();
             let expected =
                 u64::from_str_radix(case["bits"].as_str().unwrap_or(""), 16).expect("bits");
-            if got != expected {
+            // Script code cannot tell NaNs apart, and the CPU picks the bits of
+            // a new one: x86-64 sets the sign on 0/0, arm64 does not.
+            let both_nan = f64::from_bits(got).is_nan() && f64::from_bits(expected).is_nan();
+            if got != expected && !both_nan {
                 return Some(format!(
                     "{id}: bits {got:016x} != {expected:016x} :: {expr}"
                 ));

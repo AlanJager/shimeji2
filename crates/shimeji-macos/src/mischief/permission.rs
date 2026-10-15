@@ -83,6 +83,7 @@ pub fn phase_label(phase: Phase) -> &'static str {
 }
 
 /// One process-wide grant check. Not an element message.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub trait ProcessTrust {
     fn is_trusted(&self) -> bool;
 }

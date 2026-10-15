@@ -119,7 +119,7 @@ fn main() -> ExitCode {
     #[cfg(not(target_os = "macos"))]
     {
         eprintln!("spike_panels is macOS-only (scenario {})", args.scenario);
-        return ExitCode::from(2);
+        ExitCode::from(2)
     }
     #[cfg(target_os = "macos")]
     {

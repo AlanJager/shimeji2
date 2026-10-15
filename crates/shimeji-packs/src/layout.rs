@@ -730,10 +730,13 @@ fn is_real_dir(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
+/// Keys are NFC. Each entry keeps its stored name too, because a
+/// normalization-sensitive file system opens only the name as stored.
 #[derive(Debug, Default)]
 struct DirNode {
+    on_disk: String,
     dirs: HashMap<String, DirNode>,
-    files: HashSet<String>,
+    files: HashMap<String, String>,
 }
 
 #[derive(Debug)]
@@ -743,7 +746,11 @@ struct ImageIndex {
 
 #[derive(Debug, PartialEq, Eq)]
 enum ImageHit {
-    Found { relative: String, folded: bool },
+    Found {
+        relative: String,
+        on_disk: String,
+        folded: bool,
+    },
     Ambiguous(Vec<String>),
     Missing,
 }
@@ -758,10 +765,12 @@ impl ImageIndex {
             return ImageHit::Missing;
         }
         let mut resolved = Vec::with_capacity(parts.len());
+        let mut on_disk = Vec::with_capacity(parts.len());
         let mut folded = false;
-        match lookup_at(&self.root, &parts, &mut resolved, &mut folded) {
+        match lookup_at(&self.root, &parts, &mut resolved, &mut on_disk, &mut folded) {
             Ok(()) => ImageHit::Found {
                 relative: resolved.join("/"),
+                on_disk: on_disk.join("/"),
                 folded,
             },
             Err(hit) => hit,
@@ -773,25 +782,28 @@ fn lookup_at(
     node: &DirNode,
     parts: &[&str],
     resolved: &mut Vec<String>,
+    on_disk: &mut Vec<String>,
     folded: &mut bool,
 ) -> Result<(), ImageHit> {
     let Some((part, rest)) = parts.split_first() else {
         return Err(ImageHit::Missing);
     };
     if rest.is_empty() {
-        return match pick_names(node.files.iter(), part) {
-            FoldPick::Exact => {
-                resolved.push((*part).to_string());
-                Ok(())
-            }
+        let name = match pick_names(node.files.keys(), part) {
+            FoldPick::Exact => (*part).to_string(),
             FoldPick::Folded(name) => {
                 *folded = true;
-                resolved.push(name);
-                Ok(())
+                name
             }
-            FoldPick::Ambiguous(candidates) => Err(ImageHit::Ambiguous(candidates)),
-            FoldPick::Missing => Err(ImageHit::Missing),
+            FoldPick::Ambiguous(candidates) => return Err(ImageHit::Ambiguous(candidates)),
+            FoldPick::Missing => return Err(ImageHit::Missing),
         };
+        let Some(stored) = node.files.get(&name) else {
+            return Err(ImageHit::Missing);
+        };
+        on_disk.push(stored.clone());
+        resolved.push(name);
+        return Ok(());
     }
     let next_name = match pick_names(node.dirs.keys(), part) {
         FoldPick::Exact => (*part).to_string(),
@@ -805,8 +817,9 @@ fn lookup_at(
     let Some(next) = node.dirs.get(&next_name) else {
         return Err(ImageHit::Missing);
     };
+    on_disk.push(next.on_disk.clone());
     resolved.push(next_name);
-    lookup_at(next, rest, resolved, folded)
+    lookup_at(next, rest, resolved, on_disk, folded)
 }
 
 fn index_images(root: &Path) -> ImageIndex {
@@ -838,17 +851,25 @@ fn index_into(dir: &Path, node: &mut DirNode, depth: usize) {
             continue;
         }
         let key = nfc(raw);
+        // NFC and NFD spellings of one name can both exist where the file
+        // system keeps them apart. The NFC spelling wins, whatever the order.
+        let keep = |stored: &mut String| {
+            if stored.is_empty() || raw == key {
+                *stored = raw.to_string();
+            }
+        };
         if kind.is_dir() {
             if depth + 1 >= crate::import::limits::MAX_DEPTH {
                 continue;
             }
-            let child = node.dirs.entry(key).or_default();
+            let child = node.dirs.entry(key.clone()).or_default();
+            keep(&mut child.on_disk);
             index_into(&path, child, depth + 1);
         } else if kind.is_file() {
             if depth + 1 > crate::import::limits::MAX_DEPTH {
                 continue;
             }
-            node.files.insert(key);
+            keep(node.files.entry(key.clone()).or_default());
         }
     }
 }
@@ -897,9 +918,13 @@ fn resolve_images(
                     }
                     if let Some(image) = &pose.image {
                         let sibling = right_sibling(&image.relative);
-                        if let ImageHit::Found { relative, .. } = index.lookup(&sibling) {
-                            pose.right_sibling =
-                                Some(resolved_image(&mut sink, sibling, relative, pose.line));
+                        if let ImageHit::Found {
+                            relative, on_disk, ..
+                        } = index.lookup(&sibling)
+                        {
+                            pose.right_sibling = Some(resolved_image(
+                                &mut sink, sibling, relative, &on_disk, pose.line,
+                            ));
                         }
                     }
                 }
@@ -951,6 +976,7 @@ fn assign_image(sink: &mut ImageSink<'_>, source: &str, line: u32) -> Option<Res
         Ok(relative) => match sink.index.lookup(&relative) {
             ImageHit::Found {
                 relative: resolved,
+                on_disk,
                 folded,
             } => {
                 if folded && sink.reported_fold.insert(source.to_string()) {
@@ -963,7 +989,13 @@ fn assign_image(sink: &mut ImageSink<'_>, source: &str, line: u32) -> Option<Res
                         &resolved,
                     );
                 }
-                Some(resolved_image(sink, source.to_string(), resolved, line))
+                Some(resolved_image(
+                    sink,
+                    source.to_string(),
+                    resolved,
+                    &on_disk,
+                    line,
+                ))
             }
             ImageHit::Ambiguous(candidates) => {
                 if sink.reported_missing.insert(source.to_string()) {
@@ -1005,9 +1037,10 @@ fn resolved_image(
     sink: &mut ImageSink<'_>,
     source: String,
     relative: String,
+    on_disk: &str,
     line: u32,
 ) -> ResolvedImage {
-    let (width, height) = pixel_size(sink, &relative, &source, line);
+    let (width, height) = pixel_size(sink, on_disk, &source, line);
     ResolvedImage {
         source,
         relative,
@@ -1018,11 +1051,11 @@ fn resolved_image(
 
 /// Header width and height. A missing file never reaches this function.
 /// An unreadable header keeps 0×0 and one warning, and does not drop the path.
-fn pixel_size(sink: &mut ImageSink<'_>, relative: &str, source: &str, line: u32) -> (i32, i32) {
-    if let Some(size) = sink.sizes.get(relative) {
+fn pixel_size(sink: &mut ImageSink<'_>, on_disk: &str, source: &str, line: u32) -> (i32, i32) {
+    if let Some(size) = sink.sizes.get(on_disk) {
         return *size;
     }
-    let path = sink.image_root.join(relative);
+    let path = sink.image_root.join(on_disk);
     let size = match crate::images::png_pixel_size(&path) {
         Ok((width, height)) => (width as i32, height as i32),
         Err(message) => {
@@ -1037,7 +1070,7 @@ fn pixel_size(sink: &mut ImageSink<'_>, relative: &str, source: &str, line: u32)
             (0, 0)
         }
     };
-    sink.sizes.insert(relative.to_string(), size);
+    sink.sizes.insert(on_disk.to_string(), size);
     size
 }
 
@@ -1240,9 +1273,11 @@ mod tests {
             return;
         };
         if rest.is_empty() {
-            node.files.insert((*first).to_string());
+            node.files
+                .insert((*first).to_string(), (*first).to_string());
         } else {
             let child = node.dirs.entry((*first).to_string()).or_default();
+            child.on_disk = (*first).to_string();
             insert(child, rest);
         }
     }
@@ -1274,6 +1309,7 @@ mod tests {
             index.lookup("abc.png"),
             ImageHit::Found {
                 relative: "abc.png".to_string(),
+                on_disk: "abc.png".to_string(),
                 folded: false,
             }
         );
@@ -1281,6 +1317,7 @@ mod tests {
             index.lookup("ABC.png"),
             ImageHit::Found {
                 relative: "ABC.png".to_string(),
+                on_disk: "ABC.png".to_string(),
                 folded: false,
             }
         );
@@ -1302,6 +1339,7 @@ mod tests {
             index.lookup("Foo/A.png"),
             ImageHit::Found {
                 relative: "Foo/a.png".to_string(),
+                on_disk: "Foo/a.png".to_string(),
                 folded: true,
             }
         );
@@ -1309,12 +1347,36 @@ mod tests {
             index.lookup("foo/a.png"),
             ImageHit::Found {
                 relative: "foo/A.png".to_string(),
+                on_disk: "foo/A.png".to_string(),
                 folded: true,
             }
         );
         assert_eq!(
             index.lookup("FOO/a.png"),
             ImageHit::Ambiguous(vec!["Foo".to_string(), "foo".to_string()])
+        );
+    }
+
+    #[test]
+    fn nfc_lookup_opens_the_stored_nfd_name() {
+        let mut dir = DirNode {
+            on_disk: "Cafe\u{0301}".to_string(),
+            ..DirNode::default()
+        };
+        dir.files.insert(
+            "caf\u{00e9}.png".to_string(),
+            "cafe\u{0301}.png".to_string(),
+        );
+        let mut root = DirNode::default();
+        root.dirs.insert("Caf\u{00e9}".to_string(), dir);
+        let index = ImageIndex { root };
+        assert_eq!(
+            index.lookup("Caf\u{00e9}/caf\u{00e9}.png"),
+            ImageHit::Found {
+                relative: "Caf\u{00e9}/caf\u{00e9}.png".to_string(),
+                on_disk: "Cafe\u{0301}/cafe\u{0301}.png".to_string(),
+                folded: false,
+            }
         );
     }
 }

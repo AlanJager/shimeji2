@@ -71,6 +71,7 @@ impl WindowHandle {
         *lock(&inner.target) = view;
     }
 
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     pub(crate) fn snapshot(&self) -> TargetView {
         match &self.inner {
             Some(inner) => lock(&inner.target).clone(),
@@ -86,6 +87,7 @@ impl WindowHandle {
         }
     }
 
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     pub(crate) fn set_titles(&self, on: bool) {
         if let Some(inner) = &self.inner {
             lock(&inner.target).titles = on;
@@ -94,6 +96,7 @@ impl WindowHandle {
 
     /// A fresh command channel after the worker has dropped the previous one.
     /// The boot flag goes back to false so the next launch can be waited on.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     pub(crate) fn reopen(&self) -> Receiver<Cmd> {
         let (tx, rx) = mpsc::channel();
         if let Some(inner) = &self.inner {
@@ -275,11 +278,13 @@ impl Drop for Service {
 
 /// Forwards journal work to [`crate::threads::journal_writer`] and polls the
 /// 50 ms gate without blocking the AX worker on the fsync itself.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub struct JournalClient {
     tx: Sender<Job>,
     pending: HashMap<u64, Receiver<Result<(), CarryRefusal>>>,
 }
 
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 impl JournalClient {
     pub fn new(tx: Sender<Job>) -> Self {
         Self {

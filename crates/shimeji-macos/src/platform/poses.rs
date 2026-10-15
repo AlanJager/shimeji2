@@ -109,6 +109,7 @@ struct ImageGeom {
 pub struct PoseTable {
     by_key: HashMap<String, PoseLook>,
     by_path: HashMap<String, PoseLook>,
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     images: HashMap<String, ImageGeom>,
     fallback: PoseLook,
 }
@@ -208,6 +209,7 @@ impl PoseTable {
     }
 
     /// Opaque columns of a decoded image, keyed the same way poses are.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     pub(crate) fn image_span(&self, key: &str) -> Option<OpaqueSpan> {
         self.images.get(&normalize(key)).map(|geom| geom.opaque)
     }
