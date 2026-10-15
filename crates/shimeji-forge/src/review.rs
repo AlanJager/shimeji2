@@ -315,10 +315,10 @@ fn write_gif(
 
 fn pose_file(pack: &Path, character: &Character, pose: &Pose) -> Option<PathBuf> {
     let image = pose.image.as_ref()?;
-    let rooted = pack.join(&character.image_root).join(&image.relative);
-    if rooted.is_file() {
+    // Loaded names are NFC. Open the spelling on disk, which can be NFD.
+    let rooted = format!("{}/{}", character.image_root, image.relative);
+    if let Some(rooted) = shimeji_packs::stored_path(pack, &rooted).filter(|path| path.is_file()) {
         return Some(rooted);
     }
-    let bare = pack.join(&image.relative);
-    bare.is_file().then_some(bare)
+    shimeji_packs::stored_path(pack, &image.relative).filter(|path| path.is_file())
 }

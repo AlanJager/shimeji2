@@ -1230,6 +1230,26 @@ pub(crate) fn logical_relative(source: &str) -> Result<String, ()> {
     }
 }
 
+pub(crate) fn stored_path(root: &Path, relative: &str) -> Option<PathBuf> {
+    let mut path = root.to_path_buf();
+    for part in relative.split('/').filter(|part| !part.is_empty()) {
+        let exact = path.join(part);
+        if fs::symlink_metadata(&exact).is_ok() {
+            path = exact;
+            continue;
+        }
+        let wanted = nfc(part);
+        let entry = fs::read_dir(&path).ok()?.flatten().find(|entry| {
+            entry
+                .file_name()
+                .to_str()
+                .is_some_and(|name| nfc(name) == wanted)
+        })?;
+        path = entry.path();
+    }
+    Some(path)
+}
+
 fn is_drive(part: &str) -> bool {
     let bytes = part.as_bytes();
     bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':'

@@ -11,7 +11,7 @@ use super::images::{Budget, MAX_DECODED};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DecodedWav {
-    /// Path relative to the pack root, `/`-separated.
+    /// Path relative to the pack root, `/`-separated, NFC.
     pub path: String,
     pub channels: u16,
     pub sample_rate: u32,

@@ -6,7 +6,7 @@ mod common;
 use std::fs;
 use std::process;
 
-use shimeji_packs::load_dir;
+use shimeji_packs::{CollisionPolicy, import_pack, load_dir, stored_path};
 
 fn temp_dir(label: &str) -> std::path::PathBuf {
     let dir = std::env::temp_dir().join(format!("shimeji-u5a-{label}-{}", process::id()));
@@ -60,6 +60,58 @@ fn nfd_file_name_matches_nfc_reference() {
         .animations[0]
         .poses[0];
     assert_eq!(pose.image.as_ref().unwrap().relative, nfc_name);
+}
+
+#[test]
+fn stored_path_finds_nfd_names_from_nfc_text() {
+    let dir = temp_dir("stored");
+    common::write_png(&dir.join("img/Cafe\u{0301}/cafe\u{0301}.png"));
+    let found = stored_path(&dir, "img/Caf\u{00e9}/caf\u{00e9}.png");
+    let missing = stored_path(&dir, "img/Caf\u{00e9}/tea.png");
+    let found_is_file = found.as_ref().is_some_and(|path| path.is_file());
+    let _ = fs::remove_dir_all(&dir);
+    assert!(found_is_file, "{found:?}");
+    assert_eq!(missing, None);
+}
+
+#[test]
+fn folder_import_keys_decoded_images_like_resolved_poses() {
+    let dir = temp_dir("import-nfd");
+    let source = dir.join("cafe-pack");
+    let nfc_name = "caf\u{00e9}.png";
+    common::write_png(&source.join("img").join("cafe\u{0301}.png"));
+    let actions = format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<Mascot>
+  <ActionList>
+    <Action Name="Sit" Type="Stay">
+      <Animation>
+        <Pose Image="/{nfc_name}" ImageAnchor="0,0" Velocity="0,0" Duration="1"/>
+      </Animation>
+    </Action>
+  </ActionList>
+</Mascot>
+"#
+    );
+    fs::write(source.join("actions.xml"), actions).unwrap();
+    fs::write(source.join("behaviors.xml"), behaviors()).unwrap();
+    let outcome = import_pack(&source, dir.join("library"), CollisionPolicy::Report);
+    let _ = fs::remove_dir_all(&dir);
+    let outcome = outcome.unwrap();
+    let character = &outcome.pack.characters[0];
+    let pose = &character.actions.get("Sit").unwrap().animations[0].poses[0];
+    // The shell finds a pose's pixels by this key, so it must be the decoded path.
+    let key = format!(
+        "{}/{}",
+        character.image_root,
+        pose.image.as_ref().unwrap().relative
+    );
+    let decoded: Vec<&str> = outcome
+        .images
+        .iter()
+        .map(|image| image.path.as_str())
+        .collect();
+    assert_eq!(decoded, [key.as_str()]);
 }
 
 #[test]

@@ -91,3 +91,54 @@ fn the_contact_sheet_labels_every_cell_and_gifs_use_pose_durations() {
     assert_eq!(gif_delays(&pause), vec![1]);
     let _ = fs::remove_dir_all(&root);
 }
+
+#[test]
+fn gifs_open_images_stored_under_nfd_names() {
+    let root = scratch();
+    let pack = root.join("pack");
+    // The XML spells both names in NFC; the disk keeps them in NFD.
+    let set = pack.join("img/Cafe\u{0301}");
+    fs::create_dir_all(&set).unwrap();
+    let image = RgbaImage::solid(24, 16, [20, 40, 60, 255]);
+    save_png(&set.join("cafe\u{0301}.png"), &image).unwrap();
+    fs::create_dir_all(set.join("conf")).unwrap();
+    let nfc_name = "caf\u{00e9}.png";
+    fs::write(
+        set.join("conf/actions.xml"),
+        format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<Mascot>
+  <ActionList>
+    <Action Name="sit" Type="Stay" BorderType="Floor">
+      <Animation>
+        <Pose Image="/{nfc_name}" ImageAnchor="12,16" Velocity="0,0" Duration="4"/>
+      </Animation>
+    </Action>
+  </ActionList>
+</Mascot>
+"#
+        ),
+    )
+    .unwrap();
+    fs::write(
+        set.join("conf/behaviors.xml"),
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<Mascot>
+  <BehaviorList>
+    <Behavior Name="sit" Action="sit" Frequency="1"/>
+  </BehaviorList>
+</Mascot>
+"#,
+    )
+    .unwrap();
+
+    let out = root.join("review");
+    review(&pack, &out).unwrap();
+    let bytes = fs::read(out.join("sit.gif")).unwrap();
+    let decoder = gif::DecodeOptions::new()
+        .read_info(std::io::Cursor::new(bytes))
+        .unwrap();
+    // A pose whose file cannot be opened becomes a 1×1 frame.
+    assert_eq!((decoder.width(), decoder.height()), (24, 16));
+    let _ = fs::remove_dir_all(&root);
+}

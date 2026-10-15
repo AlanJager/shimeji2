@@ -21,6 +21,7 @@ use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
 use std::path::Path;
 
 use shimeji_core::diagnostics::{Diagnostic, DiagnosticKind, Severity};
+use unicode_normalization::UnicodeNormalization;
 
 use crate::import::error::{ImportError, ImportFailure};
 use crate::import::fs::open_nofollow;
@@ -35,7 +36,7 @@ const PNG_SIG: &[u8] = b"\x89PNG\r\n\x1a\n";
 /// The macOS shell wraps `rgba` as a `CGImage`. Pack bytes never reach ImageIO.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DecodedImage {
-    /// Path relative to the pack root, `/`-separated.
+    /// Path relative to the pack root, `/`-separated, NFC like resolved poses.
     pub path: String,
     pub width: u32,
     pub height: u32,
@@ -405,10 +406,14 @@ pub(crate) fn encode_rgba(width: u32, height: u32, rgba: &[u8]) -> Result<Vec<u8
     Ok(encoded)
 }
 
+/// NFC, whatever the stored form. The shell keys decoded assets by this path
+/// and looks them up by NFC pose names.
 fn slash(path: &Path) -> String {
     path.components()
         .filter_map(|component| match component {
-            std::path::Component::Normal(part) => Some(part.to_string_lossy().into_owned()),
+            std::path::Component::Normal(part) => {
+                Some(part.to_string_lossy().nfc().collect::<String>())
+            }
             _ => None,
         })
         .collect::<Vec<_>>()

@@ -17,7 +17,7 @@ mod staging;
 pub mod standard_atlas;
 mod xml;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub use capabilities::{PoseCapability, pose_capabilities};
 pub use codex::CODEX_DISPLAY_SCALE;
@@ -48,6 +48,16 @@ pub struct LoadOutcome {
 /// `pack.characters` is empty when nothing usable was found.
 pub fn load_dir(path: impl AsRef<Path>) -> std::io::Result<LoadOutcome> {
     layout::load_dir(path.as_ref())
+}
+
+/// `relative` under `root`, spelled as the file system stores it.
+///
+/// Loaded names are NFC. A component that does not exist as written matches a
+/// directory entry with the same NFC name, so a file stored under its NFD name
+/// is still found where the file system keeps the two forms apart. `None` when
+/// a component is missing.
+pub fn stored_path(root: impl AsRef<Path>, relative: &str) -> Option<PathBuf> {
+    layout::stored_path(root.as_ref(), relative)
 }
 
 /// Where a pack directory came from. Pixel size wins over a Codex version field.
