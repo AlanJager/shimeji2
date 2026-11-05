@@ -220,6 +220,11 @@ pub(crate) fn on_event(clock: &ShellClock, event: AgentEvent) {
         state.agent.shown = Some(shown);
         state.agent.seen = true;
         state.agent.last_session = event.session.clone();
+        if state.pomodoro.quiet() {
+            state.agent.pending_pose = None;
+            state.agent.posed_for = None;
+            return;
+        }
         let (pack, character) = chosen(&state);
         let id = first_id(&state, &pack, &character);
         state.agent.mascot = id;
@@ -264,6 +269,10 @@ pub(crate) fn on_event(clock: &ShellClock, event: AgentEvent) {
 
 /// Queue a pose that was waiting for the mascot id `Spawn` reports.
 pub(crate) fn flush_pending(state: &mut AppState) {
+    if state.pomodoro.quiet() {
+        state.agent.pending_pose = None;
+        return;
+    }
     let Some(name) = state.agent.pending_pose.clone() else {
         return;
     };
@@ -306,7 +315,13 @@ pub(crate) fn note_pose(state: &mut AppState) {
 pub(crate) fn place_badge(clock: &ShellClock) {
     let placed = {
         let state = clock.ivars().state.borrow();
-        if !state.settings.agents || !state.agent.seen {
+        if !state.settings.agents
+            || !state.agent.seen
+            || !state.power.pets_visible()
+            || state.power.screen_unavailable()
+            || (state.settings.pomodoro.show_badge
+                && state.pomodoro.status() != shimeji_app::pomodoro::Status::Idle)
+        {
             None
         } else {
             let shown = state.agent.shown;

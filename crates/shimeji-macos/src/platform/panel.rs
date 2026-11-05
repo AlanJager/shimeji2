@@ -284,6 +284,18 @@ impl PanelRenderer {
         self.live.iter().map(|panel| panel.mascot).collect()
     }
 
+    /// The first shown sprite, without allocating or cloning runtime frames.
+    pub fn first_sprite_cocoa(&self) -> Option<Rect> {
+        self.live.iter().find_map(|panel| {
+            if !panel.shown {
+                return None;
+            }
+            panel
+                .last_sprite
+                .map(|sprite| self.space.rect_to_cocoa(sprite))
+        })
+    }
+
     /// Sprite rectangle in Cocoa coordinates, once the pet is on screen.
     pub fn sprite_cocoa(&self, id: MascotId) -> Option<Rect> {
         let panel = self.live.iter().find(|panel| panel.mascot == id)?;

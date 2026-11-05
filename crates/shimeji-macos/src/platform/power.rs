@@ -32,6 +32,7 @@ pub struct Sources {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Power {
     user_paused: bool,
+    companion_mode: bool,
     hidden: bool,
     screens_asleep: bool,
     system_sleep: bool,
@@ -62,7 +63,7 @@ impl Power {
     }
 
     pub fn sources(&self) -> Sources {
-        let on = self.arming || self.activity() == Activity::Running;
+        let on = self.arming || (!self.companion_mode && self.activity() == Activity::Running);
         Sources {
             clock: on,
             poller: on,
@@ -72,7 +73,19 @@ impl Power {
 
     /// The engine clock should not advance behaviors.
     pub fn engine_frozen(&self) -> bool {
-        !self.arming && self.activity() != Activity::Running
+        !self.arming && (self.companion_mode || self.activity() != Activity::Running)
+    }
+
+    pub fn companion_mode(&self) -> bool {
+        self.companion_mode
+    }
+
+    pub fn set_companion_mode(&mut self, quiet: bool) {
+        self.companion_mode = quiet;
+    }
+
+    pub fn screen_unavailable(&self) -> bool {
+        self.display_down()
     }
 
     pub fn pets_visible(&self) -> bool {

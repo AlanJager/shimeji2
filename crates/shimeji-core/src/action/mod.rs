@@ -172,6 +172,17 @@ impl RunningAction {
         self.class_name
     }
 
+    /// Concrete class of the active child, used when explicitly cancelling an
+    /// application interaction without ticking the action.
+    pub(crate) fn active_class_name(&self) -> &'static str {
+        if matches!(self.runs, RunsAs::Sequence | RunsAs::Select) {
+            if let Some(child) = self.children.get(self.index) {
+                return child.active_class_name();
+            }
+        }
+        self.class_name
+    }
+
     /// Fall, drag, and a window carry (including the active child of a sequence).
     pub(crate) fn blocks_pose_interject(&self) -> bool {
         if blocks_pose_class(self.class_name) {

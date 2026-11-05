@@ -19,9 +19,9 @@ jobs:
         with:
           components: clippy
       - name: Windows shell lint
-        run: cargo clippy --locked -p shimeji-windows --all-targets -- -D warnings
+        run: cargo clippy --locked -p shimeji-app -p shimeji-windows --all-targets -- -D warnings
       - name: Headless tests
-        run: cargo test --locked -p shimeji-windows
+        run: cargo test --locked -p shimeji-app -p shimeji-windows
       - name: Build
         run: cargo build --locked --release -p shimeji-windows --bin shimeji2
       - name: Bundle

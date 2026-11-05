@@ -210,6 +210,46 @@ impl Engine {
         self.manager.dispose(id);
     }
 
+    /// Admit explicitly spawned mascots and remove dismissed ones without
+    /// advancing behavior, animation, input, or effects. Used by a frozen
+    /// application presentation; normal engine ticks retain their own flush.
+    pub fn flush_pending(&mut self) {
+        self.manager.flush();
+    }
+
+    /// Cancel transient input, poses, and active drags/carries for an explicit
+    /// application mode change. Affected mascots re-enter the required Fall
+    /// behavior at their current anchor; ordinary pets retain their behavior.
+    /// The application must restore any real moved windows separately.
+    pub fn cancel_interactions(&mut self) {
+        self.events.clear();
+        self.interjects.clear();
+        let mut restart = Vec::new();
+        for slot in self.manager.live_mut() {
+            if slot.mascot.dragging
+                || slot.behavior.dragging
+                || matches!(
+                    slot.behavior.action.active_class_name(),
+                    "Dragged" | "Regist" | "WalkWithIE" | "FallWithIE" | "ThrowIE"
+                )
+            {
+                restart.push(slot.id);
+            }
+            slot.mascot.dragging = false;
+            slot.behavior.dragging = false;
+            slot.mascot.ie_move = None;
+            slot.mascot.sounds.clear();
+        }
+        let fall = self.catalog.behavior_name(Known::Fall).to_string();
+        for id in restart {
+            self.set_behavior(id, &fall);
+        }
+        self.pending_ie = None;
+        self.window_events.clear();
+        self.window_moves.clear();
+        self.sound_events.clear();
+    }
+
     /// A window-server result from the previous tick's [`WindowMove`].
     pub fn push_window_event(&mut self, event: WindowEvent) {
         self.window_events.push(event);

@@ -6,6 +6,7 @@ pub mod import;
 pub mod journal;
 pub mod library;
 pub mod mischief_state;
+pub mod pomodoro;
 pub mod runtime;
 pub mod settings;
 pub mod window_rules;

@@ -113,3 +113,41 @@ fn animate_anyway_env_accepts_the_stub_words() {
     assert!(!animate_anyway_from_env(Some("0")));
     assert!(!animate_anyway_from_env(Some("")));
 }
+
+#[test]
+fn companion_stops_animation_and_polling_without_changing_user_choices() {
+    let mut power = Power::default();
+    power.set_companion_mode(true);
+    assert!(power.companion_mode());
+    assert!(!power.user_paused());
+    assert!(power.pets_visible());
+    assert!(power.engine_frozen());
+    assert!(!sources_on(&power));
+    power.set_user_paused(true);
+    power.set_hidden(true);
+    power.set_companion_mode(false);
+    assert!(power.user_paused());
+    assert!(!power.pets_visible());
+    assert!(!sources_on(&power));
+    power.set_hidden(false);
+    assert_eq!(power.activity(), Activity::Paused);
+    power.set_user_paused(false);
+    assert!(sources_on(&power));
+}
+
+#[test]
+fn ending_companion_keeps_reduce_motion_and_sleep_reasons() {
+    let mut power = Power::default();
+    power.set_companion_mode(true);
+    power.set_reduce_motion(true);
+    power.set_locked(true);
+    power.set_companion_mode(false);
+    assert!(power.screen_unavailable());
+    assert!(power.engine_frozen());
+    power.set_locked(false);
+    assert!(!power.screen_unavailable());
+    assert_eq!(power.activity(), Activity::ReduceMotion);
+    assert!(power.engine_frozen());
+    power.set_animate_anyway(true);
+    assert!(!power.engine_frozen());
+}

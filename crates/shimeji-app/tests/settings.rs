@@ -198,3 +198,34 @@ fn env_overrides_replace_animate_anyway_sound_and_the_hotkey() {
     assert_eq!(settings.hotkey, "cmd+shift+h");
     assert!(settings.mischief);
 }
+
+#[test]
+fn pomodoro_preferences_load_old_settings_and_round_trip_with_clamps() {
+    let dir = support::scratch("pomodoro");
+    std::fs::write(
+        dir.join(settings::FILE_NAME),
+        br#"{"version":1,"breeding":false}"#,
+    )
+    .unwrap();
+    let mut loaded = settings::load(&dir).settings;
+    assert_eq!(
+        loaded.pomodoro,
+        shimeji_app::pomodoro::Preferences::default()
+    );
+    assert!(!loaded.breeding);
+    loaded.pomodoro.focus_minutes = 0;
+    loaded.pomodoro.short_break_minutes = 200;
+    loaded.pomodoro.long_break_minutes = 42;
+    loaded.pomodoro.sound = true;
+    settings::save(&dir, &loaded).unwrap();
+    let reloaded = settings::load(&dir).settings;
+    assert_eq!(reloaded.pomodoro.focus_minutes, 1);
+    assert_eq!(reloaded.pomodoro.short_break_minutes, 180);
+    assert_eq!(reloaded.pomodoro.long_break_minutes, 42);
+    assert!(reloaded.pomodoro.sound);
+    assert!(!reloaded.breeding);
+    let raw = std::fs::read_to_string(dir.join(settings::FILE_NAME)).unwrap();
+    assert!(!raw.contains("started_at"));
+    assert!(!raw.contains("completed_focus"));
+    let _ = std::fs::remove_dir_all(dir);
+}

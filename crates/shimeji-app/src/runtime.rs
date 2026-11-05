@@ -7,8 +7,8 @@
 //! for a tick boundary and runs once, before the burst.
 
 use shimeji_core::diagnostics::Diagnostic;
-use shimeji_core::env::{Point, Snapshot};
-use shimeji_core::model::Character;
+use shimeji_core::env::{Point, Snapshot, WorkRect};
+use shimeji_core::model::{ActionKind, Character, Pose};
 use shimeji_core::window_control::{SoundEvent, WindowControl, WindowEvent, WindowMove};
 use shimeji_core::{
     Engine, EngineSettings, MascotDelta, MascotFrame, MascotId, MouseButton, NopWindow, TickDelta,
@@ -96,6 +96,9 @@ pub struct Runtime<W: WindowControl = NopWindow> {
     spawned: Vec<MascotId>,
     diagnostics: Vec<Diagnostic>,
     frozen: Vec<MascotDelta>,
+    companion: Option<Vec<MascotFrame>>,
+    companion_pose: Option<Pose>,
+    companion_fallback_pose: Option<Pose>,
 }
 
 impl Runtime<NopWindow> {
@@ -123,6 +126,9 @@ impl<W: WindowControl> Runtime<W> {
             spawned: Vec::new(),
             diagnostics: Vec::new(),
             frozen: Vec::new(),
+            companion: None,
+            companion_pose: quiet_pose(character),
+            companion_fallback_pose: fallback_pose(character),
         }
     }
 
@@ -147,7 +153,165 @@ impl<W: WindowControl> Runtime<W> {
     }
 
     pub fn frames(&self) -> Vec<MascotFrame> {
-        self.engine.frames()
+        self.companion
+            .clone()
+            .unwrap_or_else(|| self.engine.frames())
+    }
+
+    /// A static companion presentation, independent of the user's pause flag.
+    /// No engine ticks, sounds, window moves, or automatic breeding run while
+    /// enabled. Direct lifecycle/settings commands and frozen dragging remain
+    /// usable. Shells must redraw every frame on a mode transition.
+    pub fn set_companion_mode(&mut self, enabled: bool, snapshot: &Snapshot) {
+        if enabled == self.companion_mode() {
+            return;
+        }
+        self.accum = 0.0;
+        // Rebase the animation clock on the next callback, so leaving quiet
+        // mode cannot simulate the elapsed focus session as animation ticks.
+        self.started = false;
+        // Queued input and transient poses never cross a focus boundary.
+        // Lifecycle commands stay queued for on_frame, preserving its spawned
+        // and frozen output rather than consuming callbacks in this setter.
+        self.commands.retain(|command| {
+            !matches!(
+                command,
+                Command::Press { .. }
+                    | Command::Release { .. }
+                    | Command::SetBehavior { .. }
+                    | Command::InterjectBehavior { .. }
+                    | Command::Window(_)
+            )
+        });
+        if enabled {
+            self.engine.apply(snapshot);
+            self.engine.flush_pending();
+            self.companion = Some(Vec::new());
+            self.refresh_companion(snapshot);
+            self.engine.cancel_interactions();
+        } else {
+            self.companion = None;
+        }
+    }
+
+    pub fn companion_mode(&self) -> bool {
+        self.companion.is_some()
+    }
+
+    fn apply_companion_commands(&mut self, snapshot: &Snapshot) {
+        self.engine.apply(snapshot);
+        for command in std::mem::take(&mut self.commands) {
+            match command {
+                Command::Spawn => {
+                    self.engine.spawn_at(park_anchor(snapshot.cursor, snapshot));
+                }
+                Command::SpawnAt(anchor) => {
+                    self.engine.spawn_at(park_anchor(anchor, snapshot));
+                }
+                Command::Dismiss(id) => {
+                    self.engine.dismiss(id);
+                    // Frozen companions have no later engine tick to release
+                    // capacity before the next queued spawn is checked.
+                    self.engine.flush_pending();
+                }
+                Command::Pause(paused) => self.set_paused(paused),
+                Command::MoveFrozen { id, anchor } => {
+                    self.engine.move_frozen(id, anchor);
+                    if let Some(frame) = self
+                        .companion
+                        .as_mut()
+                        .and_then(|frames| frames.iter_mut().find(|frame| frame.id == id))
+                    {
+                        frame.anchor = anchor;
+                    }
+                }
+                Command::Settings(settings) => self.engine.set_settings(settings),
+                Command::SetMascotCap(cap) => self.engine.set_mascot_cap(cap),
+                Command::SetBehaviorEnabled { name, enabled } => {
+                    self.engine.set_behavior_enabled(&name, enabled)
+                }
+                // A dedicated static presentation owns the pose; user input
+                // moves it through MoveFrozen. Never queue delayed throws or
+                // stale Agent reactions for the end of the focus session.
+                Command::Press { .. }
+                | Command::Release { .. }
+                | Command::SetBehavior { .. }
+                | Command::InterjectBehavior { .. }
+                | Command::Window(_) => {}
+            }
+        }
+        self.engine.flush_pending();
+        self.engine
+            .drain_effects(&mut self.window_moves, &mut self.sounds, &mut self.spawned);
+        self.window_moves.clear();
+        self.sounds.clear();
+        self.refresh_companion(snapshot);
+    }
+
+    fn refresh_companion(&mut self, snapshot: &Snapshot) {
+        let Some(previous) = self.companion.take() else {
+            return;
+        };
+        let mut frames = self.engine.frames();
+        for frame in &mut frames {
+            if let Some(old) = previous.iter().find(|old| old.id == frame.id) {
+                *frame = old.clone();
+                if snapshot
+                    .screens
+                    .iter()
+                    .any(|screen| screen.width > 0 && screen.height > 0)
+                    && !snapshot.screens.iter().any(|screen| {
+                        let rect = screen_rect(screen);
+                        frame.anchor.x >= rect.x
+                            && frame.anchor.x <= rect.x.saturating_add(rect.width)
+                            && frame.anchor.y >= rect.y
+                            && frame.anchor.y <= rect.y.saturating_add(rect.height)
+                    })
+                {
+                    frame.anchor = park_anchor(frame.anchor, snapshot);
+                    self.engine.move_frozen(frame.id, frame.anchor);
+                }
+            } else {
+                frame.anchor = park_anchor(frame.anchor, snapshot);
+                self.engine.move_frozen(frame.id, frame.anchor);
+                let pose = self.companion_pose.as_ref().or_else(|| {
+                    if frame.image.is_none() {
+                        self.companion_fallback_pose.as_ref()
+                    } else {
+                        None
+                    }
+                });
+                if let Some(pose) = pose {
+                    frame.image = pose
+                        .image_source
+                        .clone()
+                        .or_else(|| pose.image.as_ref().map(|image| image.source.clone()));
+                    let width = if frame.look_right {
+                        pose.image_right
+                            .as_ref()
+                            .or(pose.right_sibling.as_ref())
+                            .or(pose.image.as_ref())
+                    } else {
+                        pose.image.as_ref()
+                    }
+                    .map_or(0, |image| image.width);
+                    frame.image_anchor = Some(Point::new(
+                        if frame.look_right && width > 0 {
+                            width.saturating_sub(pose.anchor_x)
+                        } else {
+                            pose.anchor_x
+                        },
+                        pose.anchor_y,
+                    ));
+                }
+            }
+            self.frozen.push(MascotDelta {
+                id: frame.id,
+                anchor_changed: true,
+                image_changed: true,
+            });
+        }
+        self.companion = Some(frames);
     }
 
     pub fn settings(&self) -> EngineSettings {
@@ -171,6 +335,15 @@ impl<W: WindowControl> Runtime<W> {
         self.spawned.clear();
         self.diagnostics.clear();
         self.frozen.clear();
+
+        if self.companion_mode() {
+            self.apply_companion_commands(snapshot);
+            self.started = true;
+            self.last_ms = now_ms;
+            self.accum = 0.0;
+            self.take_diagnostics();
+            return self.frame(0, false);
+        }
 
         if self
             .commands
@@ -324,4 +497,100 @@ impl<W: WindowControl> Runtime<W> {
             self.diag_cursor = all.len();
         }
     }
+}
+
+fn quiet_pose(character: &Character) -> Option<Pose> {
+    let names = [
+        "Sit",
+        "SitDown",
+        "座る",
+        "座ってボーっとする",
+        "Working",
+        "Idle",
+        "StandUp",
+        "立つ",
+    ];
+    let named = names
+        .iter()
+        .filter_map(|name| character.actions.get(name))
+        .flat_map(|action| action.animations.iter())
+        .flat_map(|animation| animation.poses.iter())
+        .find(|pose| {
+            pose.velocity_x == 0
+                && pose.velocity_y == 0
+                && (pose.image_source.is_some() || pose.image.is_some())
+        })
+        .cloned();
+    if named.is_some() {
+        return named;
+    }
+    let mut found = None;
+    character.visit_actions(&mut |action| {
+        if found.is_none() && action.kind == ActionKind::Stay {
+            found = action
+                .animations
+                .iter()
+                .flat_map(|animation| animation.poses.iter())
+                .find(|pose| {
+                    pose.velocity_x == 0
+                        && pose.velocity_y == 0
+                        && (pose.image_source.is_some() || pose.image.is_some())
+                })
+                .cloned();
+        }
+    });
+    found
+}
+
+fn fallback_pose(character: &Character) -> Option<Pose> {
+    let mut found = None;
+    character.visit_actions(&mut |action| {
+        if found.is_none() {
+            found = action
+                .animations
+                .iter()
+                .flat_map(|animation| animation.poses.iter())
+                .find(|pose| pose.image_source.is_some() || pose.image.is_some())
+                .cloned();
+        }
+    });
+    found
+}
+
+fn park_anchor(anchor: Point, snapshot: &Snapshot) -> Point {
+    let Some(rect) = snapshot
+        .screens
+        .iter()
+        .filter(|screen| screen.width > 0 && screen.height > 0)
+        .map(screen_rect)
+        .min_by_key(|rect| {
+            let x = anchor.x.clamp(rect.x, rect.x.saturating_add(rect.width));
+            let y = anchor.y.clamp(rect.y, rect.y.saturating_add(rect.height));
+            let dx = i128::from(anchor.x) - i128::from(x);
+            let dy = i128::from(anchor.y) - i128::from(y);
+            dx * dx + dy * dy
+        })
+    else {
+        return anchor;
+    };
+    let right = rect.x.saturating_add(rect.width);
+    let margin = (right.saturating_sub(rect.x) / 4).min(64);
+    Point::new(
+        anchor
+            .x
+            .clamp(rect.x.saturating_add(margin), right.saturating_sub(margin)),
+        rect.y.saturating_add(rect.height),
+    )
+}
+
+fn screen_rect(screen: &shimeji_core::env::ScreenSample) -> WorkRect {
+    screen
+        .work
+        .filter(|work| work.width > 0 && work.height > 0)
+        .unwrap_or(WorkRect {
+            x: screen.x,
+            y: screen.y,
+            width: screen.width,
+            height: screen.height,
+        })
 }

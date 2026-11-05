@@ -46,8 +46,8 @@ rustup target add --toolchain 1.94.1 x86_64-pc-windows-gnu
 渲染上传预乘 BGRA，帧图与镜像状态不变时只移动窗口。
 屏幕工作区避让任务栏；前台窗口仅提供碰撞边界，不执行窗口移动。
 
-默认关闭繁殖、限制 20 只。声音、设置窗口、窗口搬运、Agent hooks、更新和开机启动
-尚未接入。物理像素缩放可用 `--scale` 调整；混合 DPI、显示器变更、休眠和长期资源
+默认关闭繁殖、限制 20 只。已接入番茄钟设置窗口和可选到点提示音；角色包声音、
+窗口搬运、Agent hooks、更新和开机启动尚未接入。物理像素缩放可用 `--scale` 调整；混合 DPI、显示器变更、休眠和长期资源
 占用仍待 [Windows 手动验收](testing/windows-manual-checklist.md)。
 预览 EXE 尚未进行 Windows 代码签名。
 
@@ -62,3 +62,19 @@ EXE 已移除开发机 home 路径，导入表仅包含 Windows 系统 DLL。
 
 尚未执行：Windows runner CI、Windows EXE 的实际启动/`--check-pack`、
 Windows 桌面鼠标/托盘/DPI 验收。这个 ZIP 应以开发预览身份交给测试者。
+
+
+## 番茄钟
+
+右键托盘 → “开始专注”；“番茄钟设置…”提供三种时长和通知、提示音、
+桌宠旁标签开关。默认 25/5/15 分钟，每四轮提供长休息，阶段之间手动开始。
+专注时角色安静停放，仍可拖动、隐藏或移除；桌宠 Pause/Hide 不影响计时。
+锁屏、系统睡眠和会话断开自动暂停，回来后手动继续。仅关闭显示器不会暂停。
+
+设置保存到 `%LOCALAPPDATA%\shimeji2/settings.json`；开发验证使用
+`shimeji2.exe --profile "%TEMP%\shimeji2-pomodoro-test"`。正常退出结束本轮，
+不留下未来提醒。系统通知使用原生托盘通知，可能被系统设置抑制；完成状态
+仍保留在菜单与设置中。提示音独立开关、默认关闭。
+
+Windows 真实桌面行为仍待用户按 [验收清单](testing/windows-manual-checklist.md)
+验证；交叉编译及无窗口集成测试不代表原生通知、DPI 或鼠标交互已通过。
