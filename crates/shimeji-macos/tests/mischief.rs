@@ -835,6 +835,7 @@ fn carry_journal_scenario(action_name: &str, remove: bool, fail: bool) {
         action: action_name.into(),
         anchor: Point::new(300, 250),
         image: None,
+        image_anchor: None,
         look_right: false,
     };
     let window = WindowSample {

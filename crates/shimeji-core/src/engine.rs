@@ -35,6 +35,8 @@ pub struct MascotFrame {
     pub action: String,
     pub anchor: Point,
     pub image: Option<String>,
+    /// Facing-specific anchor of the applied pose. A path may have several anchors.
+    pub image_anchor: Option<Point>,
     pub look_right: bool,
 }
 
@@ -318,6 +320,7 @@ impl Engine {
                 action: slot.behavior.action.active_name().to_string(),
                 anchor: slot.mascot.anchor,
                 image: slot.mascot.image_key.clone(),
+                image_anchor: slot.mascot.image_anchor,
                 look_right: slot.mascot.look_right,
             })
             .collect()

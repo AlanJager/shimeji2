@@ -1,0 +1,43 @@
+name: Windows preview
+
+on:
+  workflow_dispatch:
+  push:
+    paths: ['Cargo.toml', 'Cargo.lock', 'crates/**', 'assets/packs/shime/**', 'packaging/windows/**', 'scripts/bundle-windows.py', '.github/workflows/windows.yml']
+  pull_request:
+    paths: ['Cargo.toml', 'Cargo.lock', 'crates/**', 'assets/packs/shime/**', 'packaging/windows/**', 'scripts/bundle-windows.py', '.github/workflows/windows.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.94.1
+        with:
+          components: clippy
+      - name: Windows shell lint
+        run: cargo clippy --locked -p shimeji-windows --all-targets -- -D warnings
+      - name: Headless tests
+        run: cargo test --locked -p shimeji-windows
+      - name: Build
+        run: cargo build --locked --release -p shimeji-windows --bin shimeji2
+      - name: Bundle
+        run: python scripts/bundle-windows.py --exe target/release/shimeji2.exe
+      - name: Relocated pack smoke test
+        shell: pwsh
+        run: |
+          $relocated = Join-Path $env:RUNNER_TEMP '桌宠 preview'
+          Expand-Archive target/windows-bundle/*.zip -DestinationPath $relocated
+          $exe = Get-ChildItem $relocated -Filter shimeji2.exe -Recurse | Select-Object -First 1
+          $process = Start-Process -FilePath $exe.FullName -ArgumentList '--check-pack' -WorkingDirectory $env:RUNNER_TEMP -PassThru
+          if (-not $process.WaitForExit(60000)) { $process.Kill(); throw 'Pack smoke test timed out' }
+          if ($process.ExitCode -ne 0) { throw "Pack smoke test failed: $($process.ExitCode)" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shimeji2-windows-x64-preview
+          path: |
+            target/windows-bundle/*.zip
+            target/windows-bundle/SHA256SUMS.txt

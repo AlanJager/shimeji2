@@ -11,6 +11,7 @@ shimeji2 is a Cargo workspace. These rules hold for every change.
 | `shimeji-packs` | Loaders produce pure data; export | `shimeji-core` |
 | `shimeji-app` | Settings, library, window rules, journal, agent state, `runtime` | `shimeji-packs`, `shimeji-proto` |
 | `shimeji-macos` | Binary. The macOS shell | `shimeji-app`, and the pinned objc2 crates on macOS only |
+| `shimeji-windows` | Binary. The Windows shell | `shimeji-app`, Windows bindings on Windows only |
 | `shimeji-proto` | Versioned socket messages (serde only, once the protocol exists) | — |
 | `shimeji-hook` | Hook binary | `shimeji-proto` only |
 | `shimeji-forge` | Generation CLI | `shimeji-packs`, `shimeji-proto` |
@@ -21,7 +22,9 @@ The link direction is `expr → core → packs → app → macos`. `proto` is us
 
 ## Platform code
 
-Only `shimeji-macos` may contain platform code: objc2, AppKit, CoreGraphics, QuartzCore, ApplicationServices, Foundation, ServiceManagement, AVFAudio, Carbon, or any other Apple framework. Gate it with `cfg(target_os = "macos")`. The objc2 crates are pinned with `=x.y.z` in `[workspace.dependencies]`, and only `shimeji-macos` depends on them, as target-specific dependencies.
+Apple platform code belongs only in `shimeji-macos`: objc2, AppKit, CoreGraphics, QuartzCore, ApplicationServices, Foundation, ServiceManagement, AVFAudio, Carbon, or any other Apple framework. Gate it with `cfg(target_os = "macos")`. The objc2 crates are pinned with `=x.y.z` in `[workspace.dependencies]`, and only `shimeji-macos` depends on them, as target-specific dependencies.
+
+Windows platform code belongs only in `shimeji-windows`, gated with `cfg(target_os = "windows")`, with Windows bindings as target-specific dependencies. It is a sibling shell over `shimeji-app`; neither platform shell depends on the other. Both shells supply timestamps and apply runtime render output and effects.
 
 Every other crate must build and test on any OS. `shimeji-packs` dependencies stay pure Rust. Pack bytes are decoded in Rust, not by a C library in the app process.
 

@@ -61,6 +61,7 @@ fn frame(action: &str, anchor: Point) -> shimeji_core::MascotFrame {
         action: action.into(),
         anchor,
         image: None,
+        image_anchor: None,
         look_right: false,
     }
 }

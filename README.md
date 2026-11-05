@@ -12,6 +12,11 @@ English · [简体中文](README.zh-CN.md)
 > - **Not notarized.** The first launch needs a one-time approval in System Settings; see [Install](#install).
 > - **Language.** The Settings window is in Chinese only. The menus are in English.
 
+**Windows preview:** A separate Windows 10/11 x64 shell is now available in source,
+with drag/throw controls, a tray menu and character pack loading. It is a development
+preview; Windows desktop acceptance is still pending. See the
+[Windows build and test notes](docs/windows-preview.md). The guide below covers the Mac app.
+
 ## What it is
 
 Shimeji are small characters that live on your desktop. They walk along the bottom of the screen, climb the screen edges and the window in front, hang from the ceiling, sit on top of that window and multiply. You can pick one up and throw it. The original Shimeji and its popular Shimeji-ee fork are Java apps.

@@ -7,6 +7,7 @@ members = [
     "crates/shimeji-app",
     "crates/shimeji-proto",
     "crates/shimeji-macos",
+    "crates/shimeji-windows",
     "crates/shimeji-hook",
     "crates/shimeji-forge",
 ]
