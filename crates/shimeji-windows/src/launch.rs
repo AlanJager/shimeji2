@@ -13,6 +13,7 @@ use shimeji_packs::{CollisionPolicy, DecodedImage, import_pack};
 #[derive(Debug, Default)]
 pub struct Options {
     pub pack: Option<PathBuf>,
+    pub profile: Option<PathBuf>,
     pub character: Option<String>,
     pub scale: Option<f64>,
     pub seconds: Option<f64>,
@@ -28,6 +29,10 @@ impl Options {
             match arg.to_str() {
                 Some("--pack") => {
                     options.pack = Some(PathBuf::from(args.next().ok_or("--pack needs a path")?));
+                }
+                Some("--profile") => {
+                    options.profile =
+                        Some(PathBuf::from(args.next().ok_or("--profile needs a path")?));
                 }
                 Some("--character") => {
                     options.character = Some(
@@ -66,8 +71,8 @@ pub const HELP: &str = "shimeji2 Windows preview\n\n\
     Double-click to run the bundled shime. Drag a character ZIP/folder onto the EXE,\n\
     or use the tray / pet menu to open a ZIP. Left-drag to pick up and throw.\n\n\
     shimeji2.exe [--pack PATH] [--character NAME] [--scale 0.25..4]\n\
-    [--seconds N] [--check-pack] [--help]\n\n\
-    Right-click the tray icon for pause, hide/show, rescue, and quit.";
+    [--seconds N] [--profile PATH] [--check-pack] [--help]\n\n\
+    Right-click the tray icon for Pomodoro focus, settings, pause, hide/show, and quit.";
 
 /// Release packs are located relative to the EXE, never the working directory.
 pub fn bundled_pack(executable: &Path) -> PathBuf {
@@ -161,6 +166,19 @@ mod tests {
         }
         assert!(Options::parse(["--pack".into()]).is_err());
         assert!(Options::parse(["--unknown".into()]).is_err());
+    }
+
+    #[test]
+    fn isolated_profile_argument_is_kept_separate_from_pack_path() {
+        let options = Options::parse([
+            "--profile".into(),
+            "D:/番茄 测试".into(),
+            "D:/角色.zip".into(),
+        ])
+        .unwrap();
+        assert_eq!(options.profile, Some(PathBuf::from("D:/番茄 测试")));
+        assert_eq!(options.pack, Some(PathBuf::from("D:/角色.zip")));
+        assert!(Options::parse(["--profile".into()]).is_err());
     }
 
     #[test]

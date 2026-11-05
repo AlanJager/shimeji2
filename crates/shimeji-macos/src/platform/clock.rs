@@ -14,6 +14,15 @@ pub struct GcdTimer {
 impl GcdTimer {
     /// `target` must outlive the timer. The C handler receives that pointer.
     pub fn start(target: *const AnyObject, handler: unsafe extern "C" fn(*mut c_void)) -> Self {
+        Self::start_interval(target, handler, INTERVAL_NS, LEEWAY_NS)
+    }
+
+    pub fn start_interval(
+        target: *const AnyObject,
+        handler: unsafe extern "C" fn(*mut c_void),
+        interval_ns: u64,
+        leeway_ns: u64,
+    ) -> Self {
         unsafe extern "C" {
             static _dispatch_source_type_timer: u8;
             static _dispatch_main_q: u8;
@@ -47,7 +56,7 @@ impl GcdTimer {
         assert!(!source.is_null(), "dispatch_source_create failed");
         unsafe {
             dispatch_set_context(source, target.cast_mut().cast());
-            dispatch_source_set_timer(source, 0, INTERVAL_NS, LEEWAY_NS);
+            dispatch_source_set_timer(source, 0, interval_ns, leeway_ns);
             dispatch_source_set_event_handler_f(source, Some(handler));
             dispatch_resume(source);
         }

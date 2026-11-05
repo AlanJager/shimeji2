@@ -63,6 +63,7 @@ pub(crate) struct FrozenDrag {
 
 pub struct AppState {
     pub runtime: Runtime<WindowHandle>,
+    pub pomodoro: shimeji_app::pomodoro::Pomodoro,
     pub renderer: PanelRenderer,
     pub poller: Poller,
     pub poll_actions: PollingActions,
@@ -121,6 +122,9 @@ pub struct ShellIvars {
     pub app_activated: AtomicBool,
     pub self_activated: AtomicBool,
     pub timer: RefCell<Option<GcdTimer>>,
+    pub focus_timer: RefCell<Option<GcdTimer>>,
+    pub focus_reminder: RefCell<crate::platform::focus_reminder::Reminder>,
+    pub focus_badge: RefCell<Option<crate::ui::focus_badge::Badge>>,
     pub timer_wakeups: Cell<u64>,
     pub late_ticks: Cell<u64>,
     pub last_callback: Cell<Option<Instant>>,
@@ -157,6 +161,10 @@ define_class!(
             if running {
                 self.stop_timer();
                 self.start_timer();
+            } else {
+                // A quiet companion has no animation callback to consume the
+                // new display snapshot and rehome pets from removed screens.
+                self.on_input();
             }
         }
 
@@ -189,22 +197,26 @@ define_class!(
 
         #[unsafe(method(willSleep:))]
         fn will_sleep(&self, _: Option<&NSNotification>) {
+            crate::pomodoro::interrupt(self, shimeji_app::pomodoro::Interruption::Sleep, true);
             self.flag(|power| power.set_system_sleep(true));
         }
 
         #[unsafe(method(didWake:))]
         fn did_wake(&self, _: Option<&NSNotification>) {
             self.flag(|power| power.set_system_sleep(false));
+            crate::pomodoro::interrupt(self, shimeji_app::pomodoro::Interruption::Sleep, false);
         }
 
         #[unsafe(method(sessionResigned:))]
         fn session_resigned(&self, _: Option<&NSNotification>) {
+            crate::pomodoro::interrupt(self, shimeji_app::pomodoro::Interruption::Session, true);
             self.flag(|power| power.set_session_inactive(true));
         }
 
         #[unsafe(method(sessionActive:))]
         fn session_active(&self, _: Option<&NSNotification>) {
             self.flag(|power| power.set_session_inactive(false));
+            crate::pomodoro::interrupt(self, shimeji_app::pomodoro::Interruption::Session, false);
         }
 
         #[unsafe(method(reduceMotion:))]
@@ -229,12 +241,14 @@ define_class!(
 
         #[unsafe(method(screenLocked:))]
         fn screen_locked(&self, _: Option<&NSNotification>) {
+            crate::pomodoro::interrupt(self, shimeji_app::pomodoro::Interruption::Locked, true);
             self.flag(|power| power.set_locked(true));
         }
 
         #[unsafe(method(screenUnlocked:))]
         fn screen_unlocked(&self, _: Option<&NSNotification>) {
             self.flag(|power| power.set_locked(false));
+            crate::pomodoro::interrupt(self, shimeji_app::pomodoro::Interruption::Locked, false);
         }
 
         #[unsafe(method(menuAct:))]
@@ -242,6 +256,15 @@ define_class!(
             let tag: isize = unsafe { msg_send![sender, tag] };
             self.handle_menu(tag);
         }
+
+        #[unsafe(method(focusAct:))]
+        fn focus_act(&self, sender: &AnyObject) {
+            let tag: isize = unsafe { msg_send![sender, tag] };
+            crate::pomodoro::act(self, tag);
+        }
+
+        #[unsafe(method(focusPreference:))]
+        fn focus_preference(&self, sender: &AnyObject) { crate::pomodoro::preference(self, sender); }
 
         #[unsafe(method(statusAct:))]
         fn status_act(&self, sender: &AnyObject) {
@@ -296,6 +319,9 @@ impl ShellClock {
             app_activated: AtomicBool::new(false),
             self_activated: AtomicBool::new(false),
             timer: RefCell::new(None),
+            focus_timer: RefCell::new(None),
+            focus_reminder: RefCell::new(crate::platform::focus_reminder::Reminder::default()),
+            focus_badge: RefCell::new(None),
             timer_wakeups: Cell::new(0),
             late_ticks: Cell::new(0),
             last_callback: Cell::new(None),
@@ -493,11 +519,14 @@ impl ShellClock {
             state.pets_shown = false;
         }
         crate::ui::actions::sync_extras(&mut state);
+        drop(state);
+        crate::pomodoro::refresh(self);
     }
 
     pub fn on_input(&self) {
         let after = self.pump(false);
         self.finish(after);
+        crate::pomodoro::refresh(self);
     }
 
     pub fn on_tick(&self) {
@@ -704,6 +733,7 @@ impl ShellClock {
             active_window: state.poller.slot.load_sample(),
             multiscreen: state.settings.multiscreen,
         };
+        crate::pomodoro::apply_companion(&mut state, &snapshot);
         if state.mischief.phase() != Phase::Off {
             publish_target(&state, &snapshot);
         }
@@ -902,6 +932,7 @@ impl ShellClock {
         }
         crate::ui::actions::sync_mischief_chrome(self);
         crate::agent::place_badge(self);
+        crate::pomodoro::follow_head(self);
     }
 
     fn handle_menu(&self, tag: isize) {
@@ -961,7 +992,7 @@ fn merge_delta(merged: &mut Vec<MascotDelta>, delta: MascotDelta) {
 }
 
 fn play_sounds(state: &mut AppState, sounds: &[(String, Option<String>)]) {
-    if !state.mute.allows() || sounds.is_empty() {
+    if state.pomodoro.quiet() || !state.mute.allows() || sounds.is_empty() {
         return;
     }
     let frames: Vec<_> = sounds

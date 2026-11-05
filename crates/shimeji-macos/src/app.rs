@@ -382,6 +382,7 @@ pub fn run() -> u8 {
         mtm,
         AppState {
             runtime,
+            pomodoro: shimeji_app::pomodoro::Pomodoro::default(),
             renderer,
             poller,
             poll_actions: crate::platform::window_env::PollingActions::new(&character),

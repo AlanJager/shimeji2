@@ -4,6 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use shimeji_app::agent::{Busy, ForgeInstall};
+#[cfg(unix)]
 use shimeji_app::import::Outcome;
 use shimeji_proto::InstallRequest;
 

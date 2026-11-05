@@ -27,7 +27,7 @@ shimeji2 is a Rust rewrite of [shimeji4mac](https://github.com/AlanJager/shimeji
 - **Behaves like Shimeji-ee.** The engine is checked tick by tick against the Java reference; see [How faithful is it?](#how-faithful-is-it).
 - **Supported pack formats.** It loads Classic (Japanese XML) and Shimeji-ee (English XML) packs in the common folder layouts, and Codex pet sprite sheets. Some Shimeji-ee extensions are not implemented yet; see the [compatibility notes](#compatibility-notes).
 - **Import limits.** Packs are decoded in pure Rust under size, file-count and image-size caps. Links and special files are rejected. Each import is checked in a staging folder first, so a broken pack cannot replace a working one.
-- **Stops when not needed.** The clock stops while pets are paused or hidden, when the display sleeps or the screen is locked, and when Reduce Motion is on.
+- **Stops when not needed.** The animation clock stops while pets are paused or hidden, when the display sleeps or the screen is locked, and when Reduce Motion is on. An active focus timer runs independently.
 
 It ships with one character, the original white **shime**. Its 46 images and two behavior files are byte-for-byte copies of the shimeji4mac files.
 
@@ -57,6 +57,32 @@ At launch, one shime drops onto your main display.
 | Open a pet's menu | Right-click or Control-click it. See [Pet menu](#pet-menu). |
 | Hide or show all pets | Press **Control + Shift + S**. |
 | Everything else | Use the **し** item in the menu bar. |
+
+### Pomodoro focus timer
+
+Use the Mac menu bar or Windows tray to start a focus session, pause/resume,
+end a round, or manually start the next break. Preferences are in Mac
+**Settings → 专注 (Focus)** and the Windows tray's **番茄钟设置** window.
+Mac saves changes automatically (press Return after editing minutes); Windows
+has an explicit Save button. Defaults are 25 minutes of focus, a 5 minute short
+break, and a 15 minute long break after every four completed focus rounds.
+
+During focus, pets stay still at the desktop work-area edge. The bundled shime
+sits down; other packs use a quiet pose when available. You can still
+drag, hide, add or dismiss them; they do not throw, breed, play pack sounds or
+move application windows. Paused focus stays quiet. Hiding or pausing pets
+does not pause the timer. Locking the session or sleeping the computer pauses
+the timer and requires manual resume; display sleep alone does not.
+
+Each completed stage waits for you to start the next. Quitting ends the current
+stage; only preferences persist. System reminders, an optional completion tone,
+and an optional head card have separate controls. Enable **头顶耐心条与倒计时**
+to show `耐心：24:59` above the pet with a shrinking bar: green above 75%,
+yellow above 50%, orange above 25%, and red for the final 25%. The bar and
+countdown freeze together while paused. Each new stage starts with a full bar;
+a completed stage stays at zero until the next stage or cancellation. Tone and
+the head card default off. Notification permission and system Focus settings may suppress
+system banners; the menu and settings retain the completed state.
 
 ### Multiplying
 
@@ -108,6 +134,7 @@ Changes save automatically.
 | 外观与动作 (Appearance & Behavior) | Pet size (25%–800%), scaling filter, opacity.<br>Keep on screen, move across displays.<br>Pet limit (default 50, at most 100), breeding, temporary clones.<br>**允许抛掷 (Allow throwing)**, see below.<br>A greyed-out character-transformation switch. |
 | 窗口互动 (Window interaction) | [Window mischief](#window-mischief) and its window rules. |
 | 智能体 (Agents) | [Coding-agent reactions](#coding-agent-reactions). |
+| 专注 (Focus) | Pomodoro durations, current session controls, reminders, tone and optional patience bar and countdown above the pet. |
 | 高级 (Advanced) | The hide/show shortcut: type a chord that includes Control or Command, such as `ctrl+shift+s`, then press Return.<br>Pack sounds.<br>**减少动态效果时继续动画 (Keep animating with Reduce Motion)**.<br>A diagnostics panel. |
 
 Notes on these settings:

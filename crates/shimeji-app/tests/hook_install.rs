@@ -4,11 +4,15 @@
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+#[cfg(unix)]
 use std::process::Command;
+
+#[cfg(unix)]
+use shimeji_app::agent::shell_command;
 
 use shimeji_app::agent::{
     Freshness, InstallError, MARKER, apply_install, apply_uninstall, freshness, plan_install,
-    plan_uninstall, shell_command,
+    plan_uninstall,
 };
 
 const SECRET: &str = "sk-test-SECRET-shimeji-u14";

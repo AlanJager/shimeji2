@@ -4,6 +4,7 @@ mod advanced_tab;
 pub(crate) mod agents_tab;
 mod behavior_tab;
 pub(crate) mod diagnostics_sheet;
+mod focus_tab;
 mod form;
 pub(crate) mod mischief_tab;
 mod pets_tab;
@@ -45,6 +46,7 @@ pub struct SettingsWindow {
     mischief_target: Retained<NSPopUpButton>,
     mischief_effect: Retained<NSPopUpButton>,
     pub agents: agents_tab::AgentsTab,
+    pub focus: focus_tab::FocusTab,
 }
 
 impl SettingsWindow {
@@ -57,6 +59,7 @@ impl SettingsWindow {
         let mischief = mischief_tab::build(mtm, clock);
         let advanced = advanced_tab::build(mtm, clock);
         let agents = agents_tab::build(mtm, clock);
+        let focus = focus_tab::build(mtm, clock);
         let mut controls = behavior.controls;
         controls.extend(advanced.1);
 
@@ -105,6 +108,7 @@ impl SettingsWindow {
             (&behavior.view, "外观与动作", "slider.horizontal.3"),
             (&mischief.view, "窗口互动", "macwindow"),
             (&agents.view, "智能体", "sparkles"),
+            (&focus.view, "专注", "timer"),
             (&advanced.0, "高级", "gearshape"),
         ]
         .into_iter()
@@ -196,6 +200,7 @@ impl SettingsWindow {
             mischief_target: mischief.target,
             mischief_effect: mischief.effect,
             agents,
+            focus,
         };
         ui.select_page(0);
         ui.agents.sync(clock);
@@ -254,6 +259,7 @@ impl SettingsWindow {
             let state = clock.ivars().state.borrow();
             (state.settings.clone(), state.mischief.phase())
         };
+        self.focus.sync(clock);
         self.sync_values(settings.scaling, settings.opacity);
         self.sync_mischief_status(phase, settings.mischief);
         self.sync_mischief_rules(&settings.window_rules);

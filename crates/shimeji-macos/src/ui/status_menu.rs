@@ -79,6 +79,8 @@ pub fn rebuild(clock: &ShellClock, menu: &NSMenu) {
     let target = std::ptr::from_ref(clock).cast::<AnyObject>();
     let target = unsafe { &*target };
 
+    crate::pomodoro::add_menu(clock, menu, mtm, target);
+
     let characters = NSMenu::initWithTitle(NSMenu::alloc(mtm), &NSString::from_str("Characters"));
     characters.setAutoenablesItems(false);
     if model.characters.is_empty() {
@@ -132,8 +134,23 @@ pub fn rebuild(clock: &ShellClock, menu: &NSMenu) {
         true,
         target,
     ));
-    let mischief = row(mtm, look.title, Some(TAG_MISCHIEF), true, target);
-    mischief.setState(if look.checked {
+    let (mischief_title, mischief_checked) = {
+        let state = clock.ivars().state.borrow();
+        if state.pomodoro.quiet() {
+            (
+                if state.settings.mischief {
+                    "关闭窗口互动（专注时暂停）"
+                } else {
+                    "开启窗口互动（休息时生效）"
+                },
+                state.settings.mischief,
+            )
+        } else {
+            (look.title, look.checked)
+        }
+    };
+    let mischief = row(mtm, mischief_title, Some(TAG_MISCHIEF), true, target);
+    mischief.setState(if mischief_checked {
         NSControlStateValueOn
     } else {
         NSControlStateValueOff
@@ -165,7 +182,7 @@ pub fn open_releases() {
     println!("updates_open={}", u8::from(opened));
 }
 
-fn row(
+pub(crate) fn row(
     mtm: MainThreadMarker,
     title: &str,
     tag: Option<isize>,

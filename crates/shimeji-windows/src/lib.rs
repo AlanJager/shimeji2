@@ -1,5 +1,6 @@
 //! Windows shell; Win32 calls are confined to the Windows-only module.
 
+pub mod focus;
 pub mod launch;
 pub mod sprites;
 

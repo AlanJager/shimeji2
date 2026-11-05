@@ -3,6 +3,7 @@
 pub mod context_menu;
 pub mod coords;
 pub mod counters;
+pub mod focus_layout;
 pub mod hit_test;
 pub mod hotkey;
 pub mod poses;
@@ -27,3 +28,6 @@ pub mod panel_pool;
 pub mod pointer;
 #[cfg(target_os = "macos")]
 pub mod screens;
+
+#[cfg(target_os = "macos")]
+pub(crate) mod focus_reminder;

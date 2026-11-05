@@ -89,6 +89,9 @@ pub fn status_model(clock: &ShellClock) -> StatusModel {
 }
 
 pub fn status_act(clock: &ShellClock, tag: isize) {
+    if crate::pomodoro::act(clock, tag) {
+        return;
+    }
     if tag == TAG_PAUSE {
         {
             let mut state = clock.ivars().state.borrow_mut();
@@ -110,7 +113,14 @@ pub fn status_act(clock: &ShellClock, tag: isize) {
         return;
     }
     if tag == TAG_MISCHIEF {
-        let turn_on = clock.ivars().state.borrow().mischief.phase() == Phase::Off;
+        let turn_on = {
+            let state = clock.ivars().state.borrow();
+            if state.pomodoro.quiet() {
+                !state.settings.mischief
+            } else {
+                state.mischief.phase() == Phase::Off
+            }
+        };
         set_mischief_enabled(clock, turn_on);
         return;
     }
@@ -382,6 +392,12 @@ pub fn context_menu(clock: &ShellClock, tag: isize) {
             eprintln!("settings_save={error}");
         }
         reload_pets(clock);
+    }
+    if matches!(
+        tag,
+        context_menu::TAG_DISMISS | context_menu::TAG_DISMISS_ALL
+    ) {
+        pump_stopped_clock(clock);
     }
 }
 
@@ -688,39 +704,50 @@ fn remove_newest(clock: &ShellClock, index: usize) {
         };
         (row.pack.clone(), row.name.clone())
     };
-    let mut state = clock.ivars().state.borrow_mut();
-    if is_primary(&state, &target.0, &target.1) {
-        if let Some(id) = newest(&state.renderer.live_ids()) {
-            state.renderer.detach(id);
-            state.runtime.push(Command::Dismiss(id));
-        }
-        return;
-    }
-    if let Some(extra) = state
-        .extras
-        .iter_mut()
-        .find(|extra| extra.pack_id == target.0 && extra.character == target.1)
     {
-        if let Some(id) = newest(&extra.renderer.live_ids()) {
-            extra.renderer.detach(id);
-            extra.runtime.push(Command::Dismiss(id));
+        let mut state = clock.ivars().state.borrow_mut();
+        if is_primary(&state, &target.0, &target.1) {
+            if let Some(id) = newest(&state.renderer.live_ids()) {
+                state.renderer.detach(id);
+                state.runtime.push(Command::Dismiss(id));
+            }
+        } else if let Some(extra) = state
+            .extras
+            .iter_mut()
+            .find(|extra| extra.pack_id == target.0 && extra.character == target.1)
+        {
+            if let Some(id) = newest(&extra.renderer.live_ids()) {
+                extra.renderer.detach(id);
+                extra.runtime.push(Command::Dismiss(id));
+            }
         }
     }
+    pump_stopped_clock(clock);
 }
 
 fn dismiss_everyone(clock: &ShellClock) {
-    let mut state = clock.ivars().state.borrow_mut();
-    let ids = state.renderer.live_ids();
-    for id in ids {
-        state.renderer.detach(id);
-        state.runtime.push(Command::Dismiss(id));
-    }
-    for extra in &mut state.extras {
-        let ids = extra.renderer.live_ids();
+    {
+        let mut state = clock.ivars().state.borrow_mut();
+        let ids = state.renderer.live_ids();
         for id in ids {
-            extra.renderer.detach(id);
-            extra.runtime.push(Command::Dismiss(id));
+            state.renderer.detach(id);
+            state.runtime.push(Command::Dismiss(id));
         }
+        for extra in &mut state.extras {
+            let ids = extra.renderer.live_ids();
+            for id in ids {
+                extra.renderer.detach(id);
+                extra.runtime.push(Command::Dismiss(id));
+            }
+        }
+    }
+    pump_stopped_clock(clock);
+}
+
+fn pump_stopped_clock(clock: &ShellClock) {
+    let running = clock.ivars().state.borrow().power.sources().clock;
+    if !running {
+        clock.on_input();
     }
 }
 
@@ -751,6 +778,9 @@ pub fn set_character_enabled(clock: &ShellClock, pack: &str, name: &str, enabled
     };
     if let Err(error) = settings::save(&saved.0, &saved.1) {
         eprintln!("settings_save={error}");
+    }
+    if !enabled {
+        pump_stopped_clock(clock);
     }
 }
 
@@ -1190,8 +1220,10 @@ pub(crate) fn restore_primary(state: &mut AppState, spawned: &[MascotId]) {
     if release {
         state.drop_hold = false;
     }
-    for (id, anchor) in fixups {
-        state.runtime.push(Command::MoveFrozen { id, anchor });
+    if !state.runtime.companion_mode() {
+        for (id, anchor) in fixups {
+            state.runtime.push(Command::MoveFrozen { id, anchor });
+        }
     }
     if release && unpause {
         state.runtime.set_paused(false);
@@ -1224,8 +1256,10 @@ fn restore_fields<W: WindowControl>(
     if release {
         *drop_hold = false;
     }
-    for (id, anchor) in fixups {
-        runtime.push(Command::MoveFrozen { id, anchor });
+    if !runtime.companion_mode() {
+        for (id, anchor) in fixups {
+            runtime.push(Command::MoveFrozen { id, anchor });
+        }
     }
     if release && unpause {
         runtime.set_paused(false);
@@ -1356,7 +1390,8 @@ fn set_mischief_enabled(clock: &ShellClock, on: bool) {
     let stored = {
         let mut state = clock.ivars().state.borrow_mut();
         state.settings.mischief = on;
-        state.mischief.set_enabled(on);
+        let effective = on && !state.pomodoro.quiet();
+        state.mischief.set_enabled(effective);
         (state.support_dir.clone(), state.settings.clone())
     };
     if let Err(error) = settings::save(&stored.0, &stored.1) {
@@ -1406,7 +1441,7 @@ fn control_on(sender: &AnyObject) -> bool {
 }
 
 fn play_extra(state: &mut AppState, index: usize, sounds: &[(String, Option<String>)]) {
-    if !state.mute.allows() || sounds.is_empty() {
+    if state.pomodoro.quiet() || !state.mute.allows() || sounds.is_empty() {
         return;
     }
     let frames: Vec<sound::FloatFrames> = {

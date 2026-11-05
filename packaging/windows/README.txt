@@ -34,3 +34,10 @@ shimeji2 — Windows 基础体验版（x64）
 仅分发默认白色 shime；其他角色请自行核对作者和素材许可。
 许可见 LICENSE、NOTICE.md、THIRD-PARTY-NOTICES.md、
 WINDOWS-THIRD-PARTY-NOTICES.md 与 packs/shime/ATTRIBUTION.md。
+
+番茄钟：右键托盘图标，选择“开始专注”或“番茄钟设置…”。
+默认专注 25 分钟、短休息 5 分钟，每四轮提供 15 分钟长休息。
+下一阶段手动开始。锁屏、休眠后暂停，回来后手动继续。
+偏好保存在 %LOCALAPPDATA%\shimeji2；可用 --profile PATH 选择独立配置目录。
+计时与桌宠暂停/隐藏独立；专注时桌宠安静待着，仍可拖动。
+系统可能抑制通知；完成状态仍在托盘菜单和设置中显示，提示音默认关闭。

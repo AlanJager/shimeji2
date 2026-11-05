@@ -96,6 +96,8 @@ pub struct Settings {
     /// `pack/character` that reacts. Empty uses the character the shell loaded.
     #[serde(default)]
     pub agent_character: String,
+    /// Focus-clock preferences. Active timer state is session-only.
+    pub pomodoro: crate::pomodoro::Preferences,
 }
 
 impl Default for Settings {
@@ -121,6 +123,7 @@ impl Default for Settings {
             window_rules: WindowRules::default(),
             agents: false,
             agent_character: String::new(),
+            pomodoro: crate::pomodoro::Preferences::default(),
         }
     }
 }
@@ -217,6 +220,7 @@ impl Settings {
             hotkey
         };
         self.window_rules.sanitize();
+        self.pomodoro.normalize();
     }
 }
 

@@ -15,6 +15,8 @@ mod app;
 #[cfg(target_os = "macos")]
 mod bridge;
 #[cfg(target_os = "macos")]
+mod pomodoro;
+#[cfg(target_os = "macos")]
 mod ui;
 
 /// Crate name. Dependents call this so the workspace link is real.

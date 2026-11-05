@@ -4,6 +4,7 @@
 
 pub(crate) mod actions;
 pub(crate) mod first_run;
+pub(crate) mod focus_badge;
 pub(crate) mod import_flow;
 pub(crate) mod mischief_prompt;
 pub(crate) mod settings;

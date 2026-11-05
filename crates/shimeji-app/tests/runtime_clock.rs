@@ -4,8 +4,8 @@ use shimeji_app::{Command, Runtime};
 use shimeji_core::EngineSettings;
 use shimeji_core::env::{Point, ScreenSample, Snapshot};
 use shimeji_core::model::{
-    Action, ActionKind, Animation, Behavior, Builtin, Character, Information, OrderedMap, Param,
-    Pose, Schema, ScriptSource,
+    Action, ActionKind, ActionNode, Animation, Behavior, Builtin, Character, Information,
+    OrderedMap, Param, Pose, Schema, ScriptSource,
 };
 
 fn param(key: &str, raw: &str) -> Param {
@@ -430,4 +430,237 @@ fn set_mascot_cap_applies_before_a_paused_clock_would_tick() {
     assert_eq!(runtime.population(), 0);
     runtime.on_frame(40.0, &world);
     assert_eq!(runtime.population(), 1);
+}
+
+#[test]
+fn companion_parks_on_work_floor_and_does_not_tick_or_change_pause() {
+    let mut runtime = Runtime::new(&sitter(), 1);
+    let mut world = desk();
+    world.screens[0].work = Some(shimeji_core::env::WorkRect {
+        x: 20,
+        y: 30,
+        width: 760,
+        height: 500,
+    });
+    runtime.push(Command::SpawnAt(Point::new(100, 80)));
+    runtime.on_frame(0.0, &world);
+    runtime.on_frame(40.0, &world);
+    runtime.set_companion_mode(true, &world);
+    assert!(runtime.companion_mode());
+    assert!(!runtime.paused());
+    let frames = runtime.frames();
+    assert_eq!(frames.len(), 1);
+    assert_eq!(frames[0].anchor, Point::new(100, 530));
+    assert_eq!(frames[0].image.as_deref(), Some("/sit.png"));
+    for now in [80.0, 100_000.0, 1_000_000.0] {
+        let frame = runtime.on_frame(now, &world);
+        assert_eq!(frame.ticks, 0);
+        assert!(frame.sounds.is_empty());
+        assert!(frame.window_moves.is_empty());
+        assert_eq!(runtime.frames(), frames);
+    }
+    runtime.set_paused(true);
+    runtime.set_companion_mode(false, &world);
+    assert!(runtime.paused());
+    assert_eq!(runtime.on_frame(2_000_000.0, &world).ticks, 0);
+}
+
+#[test]
+fn companion_newcomers_drag_dismiss_and_latest_settings_work_without_ticks() {
+    let mut runtime = Runtime::new(&sitter(), 1);
+    let world = desk();
+    runtime.set_companion_mode(true, &world);
+    runtime.push(Command::SpawnAt(Point::new(200, -999)));
+    let frame = runtime.on_frame(0.0, &world);
+    assert_eq!(frame.ticks, 0);
+    assert_eq!(frame.spawned.len(), 1);
+    let first = runtime.frames()[0].id;
+    assert_eq!(runtime.frames()[0].anchor.y, 600);
+    runtime.push(Command::MoveFrozen {
+        id: first,
+        anchor: Point::new(150, 250),
+    });
+    runtime.push(Command::Release {
+        mascot: Some(first),
+        button: shimeji_core::MouseButton::Left,
+    });
+    runtime.push(Command::SpawnAt(Point::new(300, -999)));
+    let settings = EngineSettings {
+        scaling: 2.0,
+        throwing: false,
+        breeding: false,
+        ..EngineSettings::default()
+    };
+    runtime.push(Command::Settings(settings));
+    runtime.on_frame(40.0, &world);
+    assert_eq!(runtime.frames().len(), 2);
+    assert_eq!(runtime.frames()[0].anchor, Point::new(150, 250));
+    assert_eq!(runtime.frames()[1].anchor.y, 600);
+    assert_eq!(runtime.settings(), settings);
+    runtime.push(Command::Dismiss(first));
+    runtime.on_frame(80.0, &world);
+    assert_eq!(runtime.frames().len(), 1);
+    assert_eq!(runtime.population(), 1);
+    runtime.set_companion_mode(false, &world);
+    assert_eq!(runtime.settings(), settings);
+    // The elapsed focus session is rebased rather than caught up on resume.
+    assert_eq!(runtime.on_frame(1_000_000.0, &world).ticks, 0);
+    assert_eq!(runtime.on_frame(1_000_040.0, &world).ticks, 1);
+}
+
+#[test]
+fn companion_newcomer_uses_a_nested_pose_without_ticking() {
+    for velocity in [0, 1] {
+        let mut character = sitter();
+        let mut root = character.actions.get("Sit").unwrap().clone();
+        let mut child = root.clone();
+        child.name = None;
+        child.animations[0].poses[0].velocity_x = velocity;
+        root.kind = ActionKind::Sequence;
+        root.animations.clear();
+        root.children = vec![ActionNode::Action(child)];
+        character.actions.insert("Sit", root);
+
+        let mut runtime = Runtime::new(&character, 1);
+        let world = desk();
+        runtime.set_companion_mode(true, &world);
+        runtime.push(Command::SpawnAt(Point::new(100, 100)));
+        let frame = runtime.on_frame(0.0, &world);
+        assert_eq!(frame.ticks, 0);
+        assert_eq!(frame.spawned.len(), 1);
+        assert_eq!(runtime.frames()[0].image.as_deref(), Some("/sit.png"));
+    }
+}
+
+#[test]
+fn companion_dismiss_frees_capacity_for_a_spawn_in_the_same_frame() {
+    let mut runtime = Runtime::new(&sitter(), 1);
+    let world = desk();
+    runtime.set_companion_mode(true, &world);
+    runtime.push(Command::SetMascotCap(1));
+    runtime.push(Command::SpawnAt(Point::new(100, 100)));
+    runtime.on_frame(0.0, &world);
+    let old = runtime.frames()[0].id;
+
+    runtime.push(Command::Dismiss(old));
+    runtime.push(Command::SpawnAt(Point::new(200, 100)));
+    let frame = runtime.on_frame(40.0, &world);
+    assert_eq!(frame.ticks, 0);
+    assert_eq!(frame.spawned.len(), 1);
+    let new = frame.spawned[0];
+    assert_ne!(new, old);
+    assert!(frame.diagnostics.is_empty(), "{:?}", frame.diagnostics);
+    assert_eq!(runtime.population(), 1);
+    assert_eq!(runtime.frames()[0].id, new);
+}
+
+#[test]
+fn companion_reactions_do_not_replay() {
+    let mut character = sitter();
+    // Rehoming an already-entered Stay action can lose its captured border;
+    // supply the required fallback just as every validated real pack does.
+    let mut fall = character.behaviors.get("Sit").unwrap().clone();
+    fall.name = "Fall".to_string();
+    fall.frequency = 0;
+    character.behaviors.insert("Fall", fall);
+    let mut runtime = Runtime::new(&character, 1);
+    let world = desk();
+    runtime.push(Command::SpawnAt(Point::new(100, 100)));
+    runtime.on_frame(0.0, &world);
+    runtime.on_frame(40.0, &world);
+    let original_image = runtime.frames()[0].image.clone();
+    let id = runtime.frames()[0].id;
+    runtime.set_companion_mode(true, &world);
+    assert_eq!(runtime.frames()[0].image, original_image);
+    runtime.push(Command::InterjectBehavior {
+        mascot: id,
+        behavior: "missing-agent-pose".to_string(),
+    });
+    runtime.push(Command::SetBehavior {
+        id: Some(id),
+        name: "missing-behavior".to_string(),
+    });
+    runtime.push(Command::Press {
+        mascot: Some(id),
+        button: shimeji_core::MouseButton::Left,
+    });
+    runtime.on_frame(80.0, &world);
+    runtime.set_companion_mode(false, &world);
+    runtime.on_frame(1_000.0, &world);
+    let resumed = runtime.on_frame(1_040.0, &world);
+    assert!(resumed.diagnostics.is_empty(), "{:?}", resumed.diagnostics);
+    assert!(resumed.window_moves.is_empty());
+    assert!(resumed.sounds.is_empty());
+    assert_eq!(runtime.frames()[0].behavior, "Fall");
+}
+
+#[test]
+fn companion_picks_nearest_negative_origin_screen_without_active_window() {
+    let mut runtime = Runtime::new(&sitter(), 1);
+    let mut world = desk();
+    world.screens.push(ScreenSample {
+        id: "left".into(),
+        x: -1000,
+        y: -100,
+        width: 1000,
+        height: 800,
+        work: None,
+    });
+    runtime.push(Command::SpawnAt(Point::new(-500, 100)));
+    runtime.set_companion_mode(true, &world);
+    runtime.on_frame(0.0, &world);
+    assert_eq!(runtime.frames()[0].anchor, Point::new(-500, 700));
+    // A malformed or temporarily empty display snapshot must not panic.
+    world.screens.clear();
+    runtime.push(Command::SpawnAt(Point::new(i32::MIN, i32::MAX)));
+    runtime.on_frame(0.0, &world);
+    assert_eq!(runtime.population(), 2);
+}
+
+#[test]
+fn companion_transition_keeps_spawn_callbacks_and_display_removal_rehomes_once() {
+    let mut runtime = Runtime::new(&sitter(), 1);
+    let mut world = desk();
+    runtime.push(Command::SpawnAt(Point::new(100, 80)));
+    runtime.set_companion_mode(true, &world);
+    let frame = runtime.on_frame(0.0, &world);
+    assert_eq!(
+        frame.spawned.len(),
+        1,
+        "transition must not consume native attach callback"
+    );
+    let id = runtime.frames()[0].id;
+    runtime.push(Command::MoveFrozen {
+        id,
+        anchor: Point::new(123, 234),
+    });
+    runtime.on_frame(40.0, &world);
+    runtime.set_companion_mode(true, &world);
+    assert_eq!(runtime.frames()[0].anchor, Point::new(123, 234));
+    world.screens[0].x = 1000;
+    runtime.on_frame(80.0, &world);
+    let rehomed = runtime.frames()[0].anchor;
+    assert!((1000..=1800).contains(&rehomed.x));
+    assert_eq!(rehomed.y, 600);
+    runtime.push(Command::MoveFrozen {
+        id,
+        anchor: Point::new(1200, 300),
+    });
+    runtime.on_frame(120.0, &world);
+    assert_eq!(runtime.frames()[0].anchor, Point::new(1200, 300));
+}
+
+#[test]
+fn companion_new_unknown_pack_has_static_fallback_image_without_ticking() {
+    let mut character = sitter();
+    let mut action = character.actions.get("Sit").unwrap().clone();
+    action.animations[0].poses[0].velocity_x = 1;
+    character.actions.insert("Sit", action);
+    let mut runtime = Runtime::new(&character, 1);
+    let world = desk();
+    runtime.set_companion_mode(true, &world);
+    runtime.push(Command::SpawnAt(Point::new(200, 100)));
+    assert_eq!(runtime.on_frame(0.0, &world).ticks, 0);
+    assert_eq!(runtime.frames()[0].image.as_deref(), Some("/sit.png"));
+    assert_eq!(runtime.frames()[0].anchor.y, 600);
 }
