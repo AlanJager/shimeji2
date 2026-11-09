@@ -1,0 +1,25 @@
+{
+  "packages": {
+    "three": "0.180.0",
+    "@pixiv/three-vrm": "3.5.5",
+    "@pixiv/three-vrm-animation": "3.5.5",
+    "@pixiv/three-vrm-core": "3.5.5",
+    "@pixiv/three-vrm-materials-hdr-emissive-multiplier": "3.5.5",
+    "@pixiv/three-vrm-materials-mtoon": "3.5.5",
+    "@pixiv/three-vrm-materials-v0compat": "3.5.5",
+    "@pixiv/three-vrm-node-constraint": "3.5.5",
+    "@pixiv/three-vrm-springbone": "3.5.5",
+    "@pixiv/types-vrm-0.0": "3.5.5",
+    "@pixiv/types-vrmc-materials-hdr-emissive-multiplier-1.0": "3.5.5",
+    "@pixiv/types-vrmc-materials-mtoon-1.0": "3.5.5",
+    "@pixiv/types-vrmc-node-constraint-1.0": "3.5.5",
+    "@pixiv/types-vrmc-springbone-1.0": "3.5.5",
+    "@pixiv/types-vrmc-springbone-extended-collider-1.0": "3.5.5",
+    "@pixiv/types-vrmc-vrm-1.0": "3.5.5",
+    "@pixiv/types-vrmc-vrm-animation-1.0": "3.5.5"
+  },
+  "bundler": "esbuild 0.28.2",
+  "sha256": "a838ffe1464642aec4e1df83881f7f27b55062b66d511f82963f81a2fee1627e",
+  "source": "vrm-vendor-entry.mjs",
+  "rebuild": "npm ci --ignore-scripts && npm run build:vrm"
+}

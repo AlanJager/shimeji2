@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>shimeji2 · 动作编辑器</title>
+  <link rel="icon" href="/assets/shime1.png">
+  <link rel="stylesheet" href="/editor.css">
+  <link rel="stylesheet" href="/catalog.css">
+  <link rel="stylesheet" href="/sequence-import.css">
+  <link rel="stylesheet" href="/authoring-preview.css">
+  <link rel="stylesheet" href="/authoring-timeline.css">
+  <link rel="stylesheet" href="/vrm-studio.css">
+  <link rel="stylesheet" href="/asset-library.css">
+  <script type="module" src="/editor.mjs"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="shimeji2 动作编辑器"><img src="/assets/shime1.png" alt=""><span>shimeji<span class="brand-two">2</span></span></a>
+    <span class="divider"></span><span class="app-title">动作编辑器</span><span class="prototype">动画创作 · 03</span>
+    <div class="top-spacer"></div><span id="save-state" class="save-state">本地工程</span>
+    <button id="open-vrm" class="quiet">3D 工作室</button><button id="open-project" class="quiet">打开工程</button><button id="save-project">保存工程</button>
+    <button id="export-pack" class="primary">导出动作包 <span aria-hidden="true">↗</span></button>
+  </header>
+  <main class="workspace">
+    <aside class="library" aria-label="动作与素材库">
+      <div class="project-heading"><span class="eyebrow">当前工程</span><button id="reset-demo" class="icon-button" title="重新打开示例" aria-label="重新打开示例">↺</button></div>
+      <input id="project-name" class="project-name" aria-label="工程名称" maxlength="100">
+      <div class="section-heading"><h2>动作库 <span id="action-count"></span></h2><button id="add-action" class="icon-button" aria-label="新建动作" title="新建动作">＋</button></div>
+      <button id="add-standing-dance" class="text-button" style="margin:0 7px 8px;text-align:left">＋ 站着跳舞</button>
+      <div id="action-list" class="action-list"></div>
+      <div class="section-heading parts-heading"><h2>部件图层 <span id="part-count">00</span></h2><button id="add-part" class="icon-button" aria-label="添加部件" title="用当前素材添加部件">＋</button></div>
+      <div id="part-list" class="part-list" aria-label="部件图层"></div>
+      <div class="asset-heading"><h2>素材库</h2><div><button id="import-folder" class="text-button" title="导入文件夹中的图片序列">文件夹</button><button id="import-images" class="text-button">＋ 导入素材</button></div></div>
+      <p class="muted library-hint">点击素材，添加到当前动作</p>
+      <div id="asset-grid" class="asset-grid" aria-label="帧素材"></div>
+      <div class="library-footer"><span class="status-dot"></span>素材和工程仅在本机处理</div>
+    </aside>
+
+    <section class="studio" aria-label="动画工作区">
+      <div class="stage-toolbar">
+        <div class="segmented" aria-label="预览模式"><button id="mode-edit" class="active" aria-pressed="true">编辑动作</button><button id="mode-test" aria-pressed="false">测试互动</button></div>
+        <div class="stage-tools"><button id="toggle-regions" class="quiet small" aria-pressed="false">显示触摸区域</button><label class="zoom-label">缩放 <select id="zoom" aria-label="预览缩放"><option value="1">100%</option><option value="1.5" selected>150%</option><option value="2">200%</option><option value="2.5">250%</option></select></label></div>
+      </div>
+      <div id="stage" class="stage">
+        <div class="stage-caption"><span class="eyebrow">LIVE PREVIEW</span><span id="stage-description">编辑中的每一帧，即时可见</span></div>
+        <div class="preview-floor"></div>
+        <div id="pet-wrap" class="pet-wrap">
+          <svg id="pet-canvas" viewBox="0 0 128 128" role="img" aria-label="桌宠预览画布" tabindex="0">
+            <title>桌宠预览：测试互动时可点击、抚摸或拖拽</title>
+            <image id="pet-image" width="128" height="128" href="/assets/shime1.png"/>
+            <svg id="parts-canvas" x="0" y="0" width="128" height="128" viewBox="0 0 128 128" overflow="hidden"></svg>
+            <g id="regions-overlay"></g><rect id="drawing-rect" class="drawing-rect" hidden/>
+          </svg>
+          <span class="anchor-dot" title="角色落脚点"></span>
+        </div>
+        <div class="preview-caption"><span id="live-action">站着发呆</span><span id="live-detail">第 1 帧</span></div>
+        <div id="stage-hint" class="stage-hint">选择一帧，调整它的停留时间</div>
+        <button id="draw-region" class="draw-button" hidden>＋ 在画布上画触摸区域</button>
+      </div>
+      <div class="transport">
+        <div class="playback-buttons"><button id="restart" class="icon-button" aria-label="从头播放" title="从头播放">↤</button><button id="play" class="play-button" aria-label="暂停播放">Ⅱ</button><button id="step" class="icon-button" aria-label="前进一个 tick" title="前进一个 tick">▹│</button></div>
+        <span id="timecode" class="timecode">00:00.00</span><span class="muted tick-label">25 Hz · 40 ms / tick</span>
+        <div class="transport-spacer"></div><select id="speed" aria-label="播放速度"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+      </div>
+      <section class="timeline" aria-label="动画时间轴">
+        <div class="timeline-toolbar"><div><h2>动画时间轴</h2><span id="timeline-summary" class="muted"></span></div><div class="timeline-actions"><button id="undo" class="icon-button" aria-label="撤销" title="撤销 ⌘Z">↶</button><button id="redo" class="icon-button" aria-label="重做" title="重做 ⇧⌘Z">↷</button><span class="divider"></span><button id="duplicate-frame" class="quiet small">复制一份</button><button id="delete-frame" class="quiet small">删除所选</button></div></div>
+        <div id="timeline-scroll" class="timeline-scroll"><div id="ruler" class="ruler"></div><div id="frame-track" class="frame-track" aria-label="动画帧"></div><div id="playhead" class="playhead"></div></div>
+        <div class="timeline-footer"><span>拖动帧可调整顺序 · ← → 选择帧 · 空格播放 / 暂停</span><span id="selected-frame-label">帧 01</span></div>
+      </section>
+    </section>
+
+    <aside class="inspector" aria-label="属性与互动规则">
+      <div class="inspector-tabs" role="tablist" aria-label="属性面板"><button id="tab-animation" role="tab" aria-selected="true" class="active">动作属性</button><button id="tab-parts" role="tab" aria-selected="false">部件</button><button id="tab-interaction" role="tab" aria-selected="false">互动规则</button></div>
+      <div id="animation-panel" class="inspector-content" role="tabpanel">
+        <div class="section-heading"><h2>动作设置</h2><span class="eyebrow">ANIMATION</span></div>
+        <label>动作名称<input id="action-name" maxlength="80"></label>
+        <label>动画方式<select id="action-kind"><option value="frames">整帧动画</option><option value="parts">多部件动画</option></select></label>
+        <label id="parts-duration-field" hidden>动作时长 / tick<input id="parts-duration" type="number" min="1" max="1000" step="1"></label>
+        <div class="switch-row"><label for="action-loop">循环播放</label><input id="action-loop" type="checkbox" role="switch"></div>
+        <div class="switch-row"><label for="action-default">设为默认动作</label><input id="action-default" type="checkbox" role="switch"></div>
+        <button id="delete-action" class="text-button danger">删除这个动作</button>
+        <div id="frame-properties">
+        <div class="inspector-divider"></div>
+        <div class="section-heading"><h2>选中帧</h2><span id="frame-number" class="frame-number">01 / 01</span></div>
+        <div id="frame-preview" class="frame-preview"></div>
+        <label>停留时间<div class="input-unit"><input id="frame-ticks" type="number" min="1" max="1500" step="1"><span>tick</span></div></label>
+        <p id="frame-duration" class="field-help">1 tick = 40 ms</p>
+        <div class="two-fields"><label>水平偏移<div class="input-unit"><input id="frame-x" type="number" min="-128" max="128" step="1"><span>px</span></div></label><label>垂直偏移<div class="input-unit"><input id="frame-y" type="number" min="-128" max="128" step="1"><span>px</span></div></label></div>
+        <div class="two-fields frame-order"><button id="frame-left">← 前移一帧</button><button id="frame-right">后移一帧 →</button></div>
+        </div>
+        <div class="inspector-note"><strong>帧动画与部件动画都可导出</strong><p>多部件动画在下方为每个部件单独记录关键帧。导出包同时保存可编辑的工程、合成动画和互动规则。</p></div>
+      </div>
+      <div id="parts-panel" class="inspector-content" role="tabpanel" hidden>
+        <div class="section-heading"><h2>部件与关节</h2><span id="part-edit-tick" class="eyebrow">PART</span></div>
+        <p id="parts-empty" class="muted">从左侧添加一个部件，或把当前动作切换为多部件动画。</p>
+        <div id="part-properties" hidden>
+          <label>部件名称<input id="part-name" maxlength="80"></label>
+          <label>父级部件<select id="part-parent"></select></label>
+          <label>使用素材<select id="part-asset"></select></label>
+          <label>编辑范围<select id="part-scope"><option value="key">当前动作的关键帧</option><option value="base">部件默认姿势</option></select></label>
+          <div class="two-fields"><label>位置 X<input id="part-x" type="number" min="-256" max="256" step="1"></label><label>位置 Y<input id="part-y" type="number" min="-256" max="256" step="1"></label></div>
+          <div class="two-fields"><label>旋转中心 X<input id="part-pivotX" type="number" min="-256" max="256" step="1"></label><label>旋转中心 Y<input id="part-pivotY" type="number" min="-256" max="256" step="1"></label></div>
+          <label>旋转角度 / °<input id="part-rotation" type="number" min="-3600" max="3600" step="1"></label>
+          <div class="two-fields"><label>水平缩放<input id="part-scaleX" type="number" min="0.05" max="4" step="0.05"></label><label>垂直缩放<input id="part-scaleY" type="number" min="0.05" max="4" step="0.05"></label></div>
+          <div class="switch-row"><label for="part-visible">显示部件</label><input id="part-visible" type="checkbox" role="switch"></div>
+          <div class="two-fields"><button id="save-part-key" class="primary small">记录当前关键帧</button><button id="delete-part-key" class="small">删除当前关键帧</button></div>
+          <div class="two-fields part-order"><button id="part-back" class="small">↓ 后移一层</button><button id="part-front" class="small">↑ 前移一层</button></div>
+          <button id="delete-part" class="text-button danger">删除这个部件</button>
+        </div>
+        <div class="inspector-note"><strong>每个部件一条轨道</strong><p>拖动时间游标，再修改位置、角度、缩放或素材，会自动记录该时刻的关键帧。父级移动时子部件跟随；旋转中心始终留在关节处。部件默认姿势影响没有关键帧的动作。</p></div>
+      </div>
+      <div id="interaction-panel" class="inspector-content" role="tabpanel" hidden>
+        <div class="section-heading"><h2>触摸区域</h2><button id="add-region" class="text-button">＋ 绘制</button></div>
+        <div id="region-list" class="region-list"></div>
+        <div class="section-heading rules-heading"><h2>触发规则 <span id="rule-count"></span></h2><button id="add-rule" class="icon-button" aria-label="添加互动规则">＋</button></div>
+        <div id="rule-list" class="rule-list"></div>
+        <div id="rule-editor"></div>
+        <div class="inspector-note"><strong>随包保存的互动规则</strong><p>优先级高的规则先执行。勾选“播完回到默认”时，循环动作也只播一轮。导出的包会带上规则，由新版 shimeji2 桌面运行时执行。</p></div>
+      </div>
+    </aside>
+  </main>
+  <footer class="bottom-bar"><span><span class="status-dot"></span><span id="status-text">就绪</span></span><button id="toggle-log" class="text-button">事件记录 <span id="log-count">0</span> ↑</button><span class="muted">shimeji2 / 本地创作实验室</span></footer>
+  <section id="log-panel" class="log-panel" aria-label="事件记录" hidden><div class="section-heading"><h2>事件记录</h2><button id="close-log" class="icon-button" aria-label="关闭事件记录">×</button></div><ol id="event-log"></ol></section>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <dialog id="export-dialog"><form method="dialog"><span class="eyebrow">EXPORT</span><h2>带走你的动作与互动</h2><p>动作包可导入新版 shimeji2。多部件动画会按 40 ms 合成完整帧，触摸区域和互动规则随包执行。</p><p class="export-note">ZIP 同时保留全部源部件、父子关系和关键帧，以及可继续编辑的工程文件。固定画布为 128 × 128，超出画布的部分会裁切。</p><div class="dialog-actions"><button value="cancel">再编辑一下</button><button id="confirm-export" type="button" class="primary">下载动作包 ZIP ↗</button></div></form></dialog>
+  <dialog id="confirm-dialog"><form method="dialog"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="dialog-actions"><button value="cancel">取消</button><button value="ok" class="primary">继续</button></div></form></dialog>
+  <input id="project-file" type="file" accept=".json,application/json" hidden>
+  <input id="image-files" type="file" accept=".png,.apng,.gif,.webp,.jpg,.jpeg,.zip,.json" multiple hidden>
+  <input id="folder-files" type="file" webkitdirectory multiple hidden>
+</body>
+</html>

@@ -1,0 +1,101 @@
+.authoring-preview-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 4px 19px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+  background: #fcfdf9;
+  position: relative;
+  z-index: 4;
+}
+.authoring-preview-toolbar button.active {
+  background: var(--accent-soft);
+  border-color: #cbdac3;
+  color: var(--accent);
+}
+.onion-options { position: relative; font-size: 10px; }
+.onion-options summary {
+  cursor: pointer;
+  padding: 5px 2px;
+  color: var(--muted);
+  border-radius: 4px;
+}
+.onion-options summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.onion-options[open] summary { color: var(--accent); }
+.onion-settings {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: -8px;
+  width: 242px;
+  padding: 15px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 30px #28342e16;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.onion-settings label { display: flex; align-items: center; gap: 9px; color: #596950; }
+.onion-settings select { margin-left: auto; padding: 3px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); }
+.onion-settings input[type=range] { min-width: 0; width: 85px; margin-left: auto; accent-color: var(--accent); }
+.onion-settings output { width: 28px; text-align: right; font: 10px ui-monospace, monospace; }
+.onion-settings input[type=color] { width: 32px; height: 23px; border: 1px solid var(--line); border-radius: 4px; padding: 1px; background: white; cursor: pointer; }
+.onion-colors { display: flex; justify-content: space-between; }
+.onion-settings .onion-wrap { gap: 6px; font-size: 10px; }
+.onion-wrap input { margin: 0; accent-color: var(--accent); }
+.onion-settings p { color: var(--muted); font-size: 9px; line-height: 1.8; }
+.onion-mode-hint { color: var(--muted); font-size: 9px; flex: 1; }
+#native-preview-toggle { margin-left: auto; }
+.authoring-preview-art-viewport {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.authoring-native-visible .authoring-preview-art-viewport { right: 164px; }
+.authoring-preview-art-viewport .pet-wrap { flex-shrink: 0; margin-inline: auto; }
+.authoring-native-visible .preview-caption,
+.authoring-native-visible .stage-hint { right: 164px; }
+.authoring-native-visible .stage-caption { max-width: calc(100% - 212px); z-index: 1; pointer-events: none; }
+.authoring-native-visible .draw-button { right: 178px; max-width: calc(100% - 202px); white-space: normal; font-size: 10px; }
+.native-preview-panel {
+  position: absolute;
+  top: 77px;
+  right: 12px;
+  width: 140px;
+  pointer-events: none;
+  padding: 5px;
+  color: #687960;
+  background: #f9fbf5e8;
+  border: 1px solid #e0e8da;
+  border-radius: 7px;
+}
+.native-preview-title { display: flex; justify-content: space-between; align-items: center; padding: 1px 1px 7px; font-size: 9px; }
+.native-preview-title strong { font-weight: 500; }
+.native-preview-title span { font: 9px ui-monospace, monospace; color: var(--muted); }
+.native-preview-checker {
+  width: 128px;
+  height: 128px;
+  background-color: #fafbf8;
+  background-image: linear-gradient(45deg,#e9eee3 25%,transparent 25%),linear-gradient(-45deg,#e9eee3 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e9eee3 75%),linear-gradient(-45deg,transparent 75%,#e9eee3 75%);
+  background-size: 12px 12px;
+  background-position: 0 0,0 6px,6px -6px,-6px 0;
+}
+#native-preview-canvas { display: block; width: 128px; height: 128px; min-width: 128px; min-height: 128px; image-rendering: pixelated; overflow: hidden; }
+#native-preview-canvas *, #onion-ghosts, #onion-ghosts * { pointer-events: none !important; }
+#native-preview-canvas image, #onion-ghosts image { image-rendering: pixelated; }
+.native-preview-pose { margin: 6px 1px 0; font-size: 9px; overflow-wrap: anywhere; line-height: 1.6; }
+.native-preview-zoom { margin: 4px 1px 0; color: var(--muted); font-size: 8px; line-height: 1.6; }
+@media (max-width: 1120px) {
+  .authoring-preview-toolbar { padding-inline: 12px; gap: 7px; }
+  .onion-mode-hint { display: none; }
+}
+@media (max-width: 850px) {
+  .authoring-preview-toolbar { min-height: 38px; }
+}
