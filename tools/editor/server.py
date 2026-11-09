@@ -41,7 +41,7 @@ STATIC.update({"/" + name: name for name in (
     "authoring-preview.mjs", "authoring-preview.css", "preview-model.mjs",
     "vrm-model.mjs", "vrm-motion.mjs", "vrm-scene.mjs", "vrm-studio.mjs", "vrm-studio.css", "vrm-integration.mjs",
     "vendor/vrm-libs.mjs", "vendor/vrm-libs.mjs.LEGAL.txt", "vendor/LICENSES.txt", "vendor/manifest.json",
-    "media-source.mjs", "media-timing.mjs", "media-integration.mjs",
+    "media-source.mjs", "media-timing.mjs", "media-integration.mjs", "pixel-edit.mjs",
     "asset-library.mjs", "asset-library.css", "asset-library-model.mjs",
 )})
 
