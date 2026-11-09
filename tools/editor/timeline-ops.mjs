@@ -42,6 +42,19 @@ function ensureCapacity(count) {
   if (count > MAX_FRAMES) throw new Error(`一个动作最多 ${MAX_FRAMES} 帧。`);
 }
 
+/** Copies of a contiguous selection, without IDs, in forward, reverse, or ping-pong order. */
+export function framesForAction(frames, selectedIds, direction = 'forward') {
+  const ids = validateFrames(frames);
+  const indices = selection(frames, selectedIds, ids);
+  if (!indices.length) throw new Error('请先选择至少一帧。');
+  if (indices.some((index, offset) => index !== indices[0] + offset)) throw new Error('建成动作需要选择连续的动画帧。');
+  if (!['forward', 'reverse', 'pingpong'].includes(direction)) throw new Error('动作方向无效。');
+  let ordered = indices.map(index => copy(frames[index]));
+  if (direction === 'reverse') ordered.reverse();
+  if (direction === 'pingpong') ordered = ordered.concat(ordered.slice(1, -1).reverse());
+  return ordered.map(frame => { const next = copy(frame); delete next.id; return next; });
+}
+
 /** Copy selected source frames in timeline order; paste always replaces IDs. */
 export function copySelectedFrames(frames, selectedIds) {
   const ids = validateFrames(frames);

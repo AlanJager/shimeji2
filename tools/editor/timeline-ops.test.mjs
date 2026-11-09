@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {applyFrameOperation, copySelectedFrames, selectFrameRange} from './timeline-ops.mjs';
+import {applyFrameOperation, copySelectedFrames, framesForAction, selectFrameRange} from './timeline-ops.mjs';
 
 const frame = (id, ticks = 5) => ({id, assetId: `asset-${id}`, ticks, x: 0, y: 0, extra: {name: id}});
 const frames = (ids = ['a', 'b', 'c', 'd', 'e']) => ids.map(id => frame(id));
@@ -143,6 +143,16 @@ test('frozen inputs work for every operation, and each returned object is indepe
     assert.equal(input[0].extra.name, 'a');
     assert.deepEqual(selectedIds, ['a', 'b']);
   }
+});
+
+test('a contiguous selection becomes a new action in forward, reverse or ping-pong order', () => {
+  const input = frames(['a', 'b', 'c', 'd']);
+  assert.deepEqual(framesForAction(input, ['c', 'a', 'b'], 'forward').map(frame => frame.assetId), ['asset-a', 'asset-b', 'asset-c']);
+  assert.equal(framesForAction(input, ['a', 'b', 'c'], 'reverse')[0].assetId, 'asset-c');
+  assert.deepEqual(framesForAction(input, ['a', 'b', 'c'], 'pingpong').map(frame => frame.assetId), ['asset-a', 'asset-b', 'asset-c', 'asset-b']);
+  assert.equal('id' in framesForAction(input, ['a'], 'forward')[0], false);
+  assert.throws(() => framesForAction(input, ['a', 'c'], 'forward'), /连续/);
+  assert.deepEqual(ids(input), ['a', 'b', 'c', 'd']);
 });
 
 test('invalid source frames, stale selection and unknown operations never partially edit input', () => {

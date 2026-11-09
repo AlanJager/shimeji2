@@ -1,11 +1,11 @@
-import {applyFrameOperation, copySelectedFrames} from './timeline-ops.mjs';
+import {applyFrameOperation, copySelectedFrames, framesForAction} from './timeline-ops.mjs';
 
-export function setupFrameTimeline({getState, onFrames, onSelect, onSelectionChange, onPlayRange, toast, idFactory}) {
+export function setupFrameTimeline({getState, onFrames, onSelect, onSelectionChange, onPlayRange, onCreateAction, toast, idFactory}) {
   const $ = id => document.getElementById(id);
   const tools = document.createElement('div');
   tools.id = 'bulk-timeline';
   tools.innerHTML = `<div class="bulk-selection"><strong id="bulk-count"></strong><span class="muted">Shift 连选 · ⌘/Ctrl 多选 · 空白处拖框</span><button id="bulk-all" class="quiet small">全选</button></div>
-    <div class="bulk-buttons"><button id="bulk-copy" class="small">拷贝</button><button id="bulk-paste" class="small">粘贴</button><button id="bulk-reverse" class="small">倒序</button><button id="bulk-pingpong" class="small" title="ABC → ABCB，首尾不重复">往返</button><label>每帧 <input id="bulk-duration" type="number" min="40" max="60000" step="40" value="240" aria-label="所选帧统一时长毫秒"> ms</label><button id="bulk-duration-apply" class="small">应用</button><select id="bulk-speed" aria-label="所选片段调速"><option value="">片段调速…</option><option value="2">加速至 2×</option><option value="0.5">减速至 0.5×</option></select><button id="bulk-speed-apply" class="small">调速</button><label class="range-label"><input id="loop-selection" type="checkbox">循环所选片段</label></div>`;
+    <div class="bulk-buttons"><button id="bulk-copy" class="small">拷贝</button><button id="bulk-paste" class="small">粘贴</button><button id="bulk-reverse" class="small">倒序</button><button id="bulk-pingpong" class="small" title="ABC → ABCB，首尾不重复">往返</button><button id="bulk-make-action" class="small">建成动作</button><select id="bulk-action-direction" aria-label="新动作方向"><option value="forward">正序</option><option value="reverse">倒序</option><option value="pingpong">往返</option></select><label>每帧 <input id="bulk-duration" type="number" min="40" max="60000" step="40" value="240" aria-label="所选帧统一时长毫秒"> ms</label><button id="bulk-duration-apply" class="small">应用</button><select id="bulk-speed" aria-label="所选片段调速"><option value="">片段调速…</option><option value="2">加速至 2×</option><option value="0.5">减速至 0.5×</option></select><button id="bulk-speed-apply" class="small">调速</button><label class="range-label"><input id="loop-selection" type="checkbox">循环所选片段</label></div>`;
   document.querySelector('.timeline-toolbar').after(tools);
   let actionId, ids = new Set(), anchorId, clipboard = [], loop = false;
   const frames = () => getState().action.frames;
@@ -27,6 +27,7 @@ export function setupFrameTimeline({getState, onFrames, onSelect, onSelectionCha
     if (state.assetIds && clipboard.some(frame => !state.assetIds.includes(frame.assetId))) clipboard = [];
     $('bulk-paste').disabled = !clipboard.length;
     $('bulk-pingpong').disabled = !contiguous() || selected.length < 3;
+    $('bulk-make-action').disabled = !contiguous();
     $('bulk-copy').disabled = !selected.length;
     if (document.activeElement !== $('bulk-duration')) {
       $('bulk-duration').value = selected.every(f => f.ticks === selected[0].ticks) ? selected[0].ticks * 40 : '';
@@ -64,6 +65,10 @@ export function setupFrameTimeline({getState, onFrames, onSelect, onSelectionCha
   $('bulk-paste').onclick = () => run('paste');
   $('bulk-reverse').onclick = () => run('reverse');
   $('bulk-pingpong').onclick = () => run('pingpong');
+  $('bulk-make-action').onclick = () => {
+    try { onCreateAction?.(framesForAction(frames(), selection(), $('bulk-action-direction').value)); }
+    catch (error) { toast(error.message); }
+  };
   $('bulk-all').onclick = () => { ids = new Set(frames().map(f => f.id)); onSelectionChange(); };
   $('bulk-duration-apply').onclick = () => {
     const value = Number($('bulk-duration').value);
