@@ -13,9 +13,11 @@ export function prepareMediaImport(project, payload, currentActionId, idFactory)
       next.assets.find(asset => asset.id === payload.replaceAssetId).src = payload.assets[0].src;
     }};
   }
-  if (!['append','new'].includes(payload.destination) || !named(payload.groupName)) fail('导入目标或素材组名称无效。');
+  if (!['append','new','insert'].includes(payload.destination) || !named(payload.groupName)) fail('导入目标或素材组名称无效。');
   if (!Array.isArray(payload.clips) || !payload.clips.length || payload.clips.length > 64) fail('需要包含 1–64 个动画片段。');
-  if (payload.destination === 'append' && payload.clips.length !== 1) fail('多个片段请分别新建动作。');
+  if ((payload.destination === 'append' || payload.destination === 'insert') && payload.clips.length !== 1) fail('多个片段请分别新建动作。');
+  const insertAt = payload.destination === 'insert' ? current.frames.findIndex(frame => frame.id === payload.insertAfterFrameId) : -1;
+  if (payload.destination === 'insert' && (current.kind === 'parts' || insertAt < 0)) fail('请把新帧插入到整帧动作的某一帧之后。');
   if (payload.destination === 'new' && project.actions.length + payload.clips.length > 64) fail('导入后动作会超过 64 个。');
   if ((project.assetGroups?.length ?? 0) >= 256) fail('素材组已达到 256 个，请先整理。');
   const sources = new Map(project.assets.map(asset => [asset.src,asset.id])), assets = [];
@@ -43,12 +45,21 @@ export function prepareMediaImport(project, payload, currentActionId, idFactory)
   const partAssets = [...new Set(payload.clips[0].frames.map(frame => frame.assetIndex))].map(index => imported[index]);
   if (parts && payload.animated) fail('整组动画请新建整帧动作，不能叠放为静态部件。');
   if (parts && project.parts.length + partAssets.length > 32) fail('当前工程最多 32 个部件。');
-  if (!parts && payload.destination === 'append' && current.frames.length + clips[0].frames.length > 256) fail('当前动作最多 256 帧。');
+  if (!parts && (payload.destination === 'append' || payload.destination === 'insert') && current.frames.length + clips[0].frames.length > 256) fail('当前动作最多 256 帧。');
+  const regions = Array.isArray(payload.regions) ? payload.regions : [];
+  if (regions.length > 32 || (project.regions?.length ?? 0) + regions.length > 32) fail('触摸区域会超过 32 个。');
+  for (const region of regions) {
+    if (!named(region.name) || !Number.isInteger(region.x) || !Number.isInteger(region.y) || !Number.isInteger(region.width) || !Number.isInteger(region.height) ||
+        region.x < 0 || region.y < 0 || region.width < 1 || region.height < 1 || region.x + region.width > 128 || region.y + region.height > 128) fail('切片转换后的触摸区域超出画布。');
+  }
+  const pivot = payload.pivot && Number.isInteger(payload.pivot.x) && Number.isInteger(payload.pivot.y) ? payload.pivot : null;
   const actions = clips.map(clip => ({id:idFactory('action'),name:clip.name,kind:'frames',loop:clip.loop,
     frames:clip.frames.map(frame => ({...frame,id:idFactory('frame'),x:0,y:0}))}));
-  return {parts,imported,partAssets,selectedActionId:payload.destination === 'new' ? actions[0].id : currentActionId,apply(next) {
+  return {parts,imported,partAssets,pivot,selectedActionId:payload.destination === 'new' ? actions[0].id : currentActionId,apply(next) {
     next.assets.push(...assets); (next.assetGroups ??= []).push(group);
     if (payload.destination === 'new') next.actions.push(...actions);
+    else if (payload.destination === 'insert') next.actions.find(action => action.id === currentActionId).frames.splice(insertAt + 1, 0, ...actions[0].frames);
     else if (!parts) next.actions.find(action => action.id === currentActionId).frames.push(...actions[0].frames);
+    for (const region of regions) (next.regions ??= []).push({id:idFactory('region'), ...region});
   }};
 }

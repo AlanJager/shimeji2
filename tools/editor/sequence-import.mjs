@@ -1,4 +1,4 @@
-import {naturalOrder, gridFrames, normalizationPlan, sequenceClock} from './sequence-model.mjs';
+import {naturalOrder, gridFrames, normalizationPlan, sequenceClock, placeSlices} from './sequence-model.mjs';
 import {decodeMediaFiles} from './media-source.mjs';
 import {quantizeDurations, timedFrameAt} from './media-timing.mjs';
 
@@ -125,8 +125,11 @@ export function setupSequenceImport({getContext, onImport, toast}) {
     if(destination==='append' && context.kind==='parts' && context.partCount+new Set(clips[0].frames.map(frame=>frame.assetIndex)).size>32)throw new Error('添加后部件会超过 32 个。');
     if(destination==='append' && context.kind!=='parts' && context.frameCount+clips[0].frames.length>256)throw new Error('当前动作最多 256 帧。');
     if(destination==='new' && context.actionCount+clips.length>64)throw new Error('导入全部标签后动作会超过 64 个，请减少标签或整理工程。');
+    if(destination==='insert' && (!state.insertAfterFrameId || clips.length!==1 || context.kind==='parts'))throw new Error('拖到某一帧时请只选择一个标签，并放在整帧动作上。');
+    if(destination==='insert' && context.frameCount+clips[0].frames.length>256)throw new Error('当前动作最多 256 帧。');
+    const placed=mode==='sheet'||!state.slices?.length?{regions:[],pivot:null}:placeSlices(state.slices, plan.placements[0]);
     const previewIndex=selected==='all'?Number($('sequence-preview-clip').value):0;
-    return {mode,frames,grid,plan,ticks,destination,name,clips,groupFrames,timing,preserve,previewClip:clips[previewIndex]??clips[0]};
+    return {mode,frames,grid,plan,ticks,destination,name,clips,groupFrames,timing,preserve,regions:placed.regions,pivot:placed.pivot,previewClip:clips[previewIndex]??clips[0]};
   }
 
   function drawNormalized(bitmap, placement, canvas) {
@@ -257,7 +260,9 @@ export function setupSequenceImport({getContext, onImport, toast}) {
       if(getContext().projectToken!==state.projectToken)throw new Error('桌宠工程已变化，本次导入没有应用。');
       const result = await onImport({assets,clips:config.clips.map(({name,frames,loop})=>({name,frames,loop})),groupFrames:config.groupFrames,
         destination:config.destination,groupName:config.name,source:state.source,projectToken:state.projectToken,animated:state.animated,
-        ...(state.replaceAssetId?{replaceAssetId:state.replaceAssetId}:{}),ticks:config.ticks,name:config.name});
+        regions:config.regions,pivot:config.pivot,
+        ...(state.replaceAssetId?{replaceAssetId:state.replaceAssetId}:{}),
+        ...(state.insertAfterFrameId?{insertAfterFrameId:state.insertAfterFrameId}:{}),ticks:config.ticks,name:config.name});
       if (result === false) throw new Error('工程未接受这组素材，请调整设置后重试。');
       if (activeGeneration === generation) close();
     } catch (error) {
@@ -289,8 +294,8 @@ export function setupSequenceImport({getContext, onImport, toast}) {
       if(options.replaceAssetId && decoded.frames.length!==1)throw new Error('替换素材只支持单张静态图片；动画请作为新动作导入。');
       if(getContext().projectToken!==projectToken)throw new Error('桌宠工程已变化，请重新选择素材。');
       const sources=decoded.frames.map((frame,sourceIndex)=>({...frame,sourceIndex}));
-      state = {files:decoded.frames.map(frame=>frame.blob),sources,clips:decoded.clips,animated:decoded.animated,gridEligible:decoded.gridEligible,
-        source:{format:decoded.format,fileNames:decoded.fileNames},projectToken,replaceAssetId:options.replaceAssetId};
+      state = {files:decoded.frames.map(frame=>frame.blob),sources,clips:decoded.clips,slices:decoded.slices??[],animated:decoded.animated,gridEligible:decoded.gridEligible,
+        source:{format:decoded.format,fileNames:decoded.fileNames},projectToken,replaceAssetId:options.replaceAssetId,insertAfterFrameId:options.insertAfterFrameId};
       $('sequence-settings').disabled=false;
       $('sequence-files-summary').textContent = `${decoded.format.toUpperCase()} · ${sources.length} 帧 · ${decoded.clips.length} 个动作标签${options.replaceAssetId?' · 替换后保留原素材 ID、动画时长和所有引用':''}`;
       $('sequence-mode').value = 'batch'; $('sequence-mode').querySelector('[value="sheet"]').disabled = !decoded.gridEligible || Boolean(options.replaceAssetId);
@@ -309,9 +314,13 @@ export function setupSequenceImport({getContext, onImport, toast}) {
       $('sequence-decoder-warning').textContent=decoded.warnings.join(' ');$('sequence-decoder-warning').hidden=!decoded.warnings.length;
       $('sequence-destination').querySelector('[value="append"]').textContent = context.kind === 'parts' ? '添加到当前部件图层' : '追加到当前动作';
       $('sequence-destination').querySelector('[value="append"]').disabled=decoded.clips.length>1 || decoded.animated&&context.kind==='parts';
+      let insertOption=$('sequence-destination').querySelector('[value="insert"]');
+      if(!insertOption){insertOption=document.createElement('option');insertOption.value='insert';insertOption.textContent='插入到这一帧之后';$('sequence-destination').append(insertOption);}
+      insertOption.hidden=!options.insertAfterFrameId;
       $('sequence-destination').querySelector('[value="replace"]').hidden=!options.replaceAssetId;
-      $('sequence-destination').disabled=Boolean(options.replaceAssetId);
-      $('sequence-destination').value=options.replaceAssetId?'replace':decoded.animated||decoded.clips.length>1?'new':'append';
+      $('sequence-destination').disabled=Boolean(options.replaceAssetId||options.insertAfterFrameId);
+      $('sequence-destination').value=options.replaceAssetId?'replace':options.insertAfterFrameId?'insert':decoded.animated||decoded.clips.length>1?'new':'append';
+      if(options.insertAfterFrameId && $('sequence-clip-select').value==='all')$('sequence-clip-select').value='0';
       $('sequence-name').value=decoded.name.slice(0,80) || '导入动作';
       $('sequence-confirm').textContent=options.replaceAssetId?'替换素材':'导入素材与动作';
       await preview();

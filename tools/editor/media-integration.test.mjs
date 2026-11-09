@@ -34,6 +34,18 @@ test('capacity uses unique PNGs and rejects overflow or animated parts stacking'
   f.project.assets.splice(1);f.project.actions[0].kind='parts';f.payload.clips.splice(1);f.payload.destination='append';f.payload.animated=true;
   assert.throws(f.prepare,/静态部件/);
 });
+test('insert keeps the target frame and turns slices into regions', () => {
+  const f = fixture();
+  f.project.regions = [];
+  f.payload.destination = 'insert';
+  f.payload.insertAfterFrameId = 'f';
+  f.payload.clips = [f.payload.clips[0]];
+  f.payload.regions = [{name: '头', x: 10, y: 12, width: 20, height: 16}];
+  f.prepare().apply(f.project);
+  assert.deepEqual(f.project.actions[0].frames.map(frame => frame.ticks), [7, 1, 3]);
+  assert.equal(f.project.regions[0].name, '头');
+  assert.equal(f.project.regions[0].width, 20);
+});
 test('a selected static-folder clip only adds its referenced part images', () => {
   const f=fixture();f.project.actions[0].kind='parts';f.payload.destination='append';f.payload.clips=[{name:'selected',loop:true,frames:[{assetIndex:1,ticks:6}]}];
   const result=f.prepare();assert.equal(result.partAssets.length,1);assert.equal(result.partAssets[0].name,'b.png');

@@ -87,6 +87,37 @@ export function normalizationPlan(frames, {mode = 'fit', scale = 1, anchorX = 64
   return {scale: sharedScale, placements, clippedCount: placements.filter(placement => placement.clipped).length};
 }
 
+export function placeSlices(slices, placement) {
+  if (!Array.isArray(slices) || slices.length > 32) throw new Error('切片最多 32 个。');
+  if (!placement?.source?.width || !placement?.source?.height || !Number.isFinite(placement.x) || !Number.isFinite(placement.width)) {
+    throw new Error('切片需要放在已归一化的画布上。');
+  }
+  const scaleX = placement.width / placement.source.width;
+  const scaleY = placement.height / placement.source.height;
+  const regions = [];
+  let pivot = null;
+  for (const slice of slices) {
+    if (!slice || typeof slice.name !== 'string' || !slice.name.trim() || [...slice.name].length > 80) throw new Error('切片名称无效。');
+    for (const key of ['x', 'y', 'width', 'height']) if (!Number.isInteger(slice[key])) throw new Error('切片矩形无效。');
+    const left = placement.x + slice.x * scaleX;
+    const top = placement.y + slice.y * scaleY;
+    const right = left + slice.width * scaleX;
+    const bottom = top + slice.height * scaleY;
+    const x = Math.max(0, Math.min(128, Math.floor(left)));
+    const y = Math.max(0, Math.min(128, Math.floor(top)));
+    const width = Math.max(0, Math.min(128, Math.ceil(right))) - x;
+    const height = Math.max(0, Math.min(128, Math.ceil(bottom))) - y;
+    if (width >= 1 && height >= 1) regions.push({name: slice.name.trim(), x, y, width, height});
+    if (!pivot && Number.isInteger(slice.pivotX) && Number.isInteger(slice.pivotY)) {
+      pivot = {
+        x: Math.round(placement.x + (slice.x + slice.pivotX) * scaleX),
+        y: Math.round(placement.y + (slice.y + slice.pivotY) * scaleY),
+      };
+    }
+  }
+  return {regions, pivot};
+}
+
 export function checkImportCapacity({assetCount, frameCount, partCount, kind}, count, destination) {
   integer(count, 1, SEQUENCE_LIMITS.frames, '导入帧数');
   if (!['append', 'new'].includes(destination)) throw new Error('导入目标无效。');
