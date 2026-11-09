@@ -369,5 +369,231 @@ class ZipTests(unittest.TestCase):
             media.decode_media(archive([(f"{i}.png", image) for i in range(17)]), "pixels.zip")
 
 
+def _ase_string(text):
+    raw = text.encode("utf-8")
+    return struct.pack("<H", len(raw)) + raw
+
+
+def _ase_chunk(kind, payload):
+    return struct.pack("<IH", 6 + len(payload), kind) + payload
+
+
+def _ase_layer(name, flags=1, kind=0, blend=0, opacity=255, child=0):
+    return _ase_chunk(0x2004, struct.pack("<HHHHHHB3s", flags, kind, child, 0, 0, blend, opacity, b"\0\0\0") + _ase_string(name))
+
+
+def _ase_cel(layer, pixels, x=0, y=0, opacity=255, z=0, linked=None, bpp=4):
+    head = struct.pack("<HhhBHh5s", layer, x, y, opacity, 1 if linked is not None else 2, z, b"\0" * 5)
+    if linked is not None:
+        return _ase_chunk(0x2005, head + struct.pack("<H", linked))
+    height = len(pixels)
+    width = len(pixels[0]) // bpp
+    raw = b"".join(pixels)
+    return _ase_chunk(0x2005, head + struct.pack("<HH", width, height) + zlib.compress(raw))
+
+
+def _ase_file(width, height, frames, depth=32, speed=100, transparent=0, flags=1):
+    body = b"".join(frames)
+    header = struct.pack("<IHHHHHIH", 0, 0xA5E0, len(frames), width, height, depth, flags, speed)
+    header += struct.pack("<IIB3sHBB", 0, 0, transparent, b"\0\0\0", 0, 1, 1)
+    header += struct.pack("<hhHH", 0, 0, 0, 0) + bytes(84)
+    assert len(header) == 128
+    data = header + body
+    return struct.pack("<I", len(data)) + data[4:]
+
+
+def _ase_frame(chunks, duration=100):
+    payload = b"".join(chunks)
+    return struct.pack("<IHHH2sI", 16 + len(payload), 0xF1FA, len(chunks), duration, b"\0\0", len(chunks)) + payload
+
+
+class AsepriteTests(unittest.TestCase):
+    def rgba(self, *rows):
+        return [bytes(pixel) for pixel in rows]
+
+    def test_compressed_rgba_layer_duration_and_slice_pivot(self):
+        red = self.rgba([255, 0, 0, 255, 0, 0, 0, 0], [0, 255, 0, 128, 0, 0, 255, 255])
+        slice_body = struct.pack("<III", 1, 2, 0) + _ase_string("head")
+        slice_body += struct.pack("<IllII", 0, 0, 0, 2, 1) + struct.pack("<ll", 1, 0)
+        tags = struct.pack("<H8s", 1, b"\0" * 8)
+        tags += struct.pack("<HHBH6s3sB", 0, 0, 1, 0, b"\0" * 6, b"\0\0\0", 0) + _ase_string("look")
+        frame = _ase_frame([
+            _ase_layer("body"),
+            _ase_cel(0, red),
+            _ase_chunk(0x2018, tags),
+            _ase_chunk(0x2022, slice_body),
+        ], duration=80)
+        result = media.decode_media(_ase_file(2, 2, [frame]), "pet.aseprite")
+        image = frame_image(result["frames"][0])
+        self.assertEqual(list(image.getpixel((0, 0))), [255, 0, 0, 255])
+        self.assertEqual(list(image.getpixel((1, 0))), [0, 0, 0, 0])
+        self.assertEqual(list(image.getpixel((0, 1))), [0, 255, 0, 128])
+        self.assertEqual(list(image.getpixel((1, 1))), [0, 0, 255, 255])
+        self.assertEqual(result["frames"][0]["durationMs"], 80)
+        self.assertEqual(result["clips"], [{"name": "look", "indices": [0], "loop": True}])
+        self.assertEqual(result["slices"], [{"name": "head", "x": 0, "y": 0, "width": 2, "height": 1, "pivotX": 1, "pivotY": 0}])
+
+    def test_linked_cel_matches_source_and_ping_pong_omits_endpoints(self):
+        pixel = self.rgba([10, 20, 30, 255])
+        first = _ase_frame([_ase_layer("only"), _ase_cel(0, pixel)], duration=40)
+        linked = _ase_frame([_ase_cel(0, None, linked=0)], duration=40)
+        tags = struct.pack("<H8s", 1, b"\0" * 8) + struct.pack("<HHBH6s3sB", 0, 2, 2, 0, b"\0" * 6, b"\0\0\0", 0) + _ase_string("bob")
+        third = _ase_frame([_ase_cel(0, None, linked=0), _ase_chunk(0x2018, tags)], duration=40)
+        result = media.decode_media(_ase_file(1, 1, [first, linked, third]), "bob.ase")
+        self.assertEqual(frame_image(result["frames"][1]).getpixel((0, 0)), (10, 20, 30, 255))
+        self.assertEqual(frame_image(result["frames"][2]).getpixel((0, 0)), (10, 20, 30, 255))
+        self.assertEqual(result["clips"][0]["indices"], [0, 1, 2, 1])
+
+    def test_hidden_reference_and_tilemap_layers_do_not_paint(self):
+        red = self.rgba([255, 0, 0, 255])
+        blue = self.rgba([0, 0, 255, 255])
+        frame = _ase_frame([
+            _ase_layer("hidden", flags=0),
+            _ase_layer("guide", flags=1 | 64),
+            _ase_layer("tiles", flags=1, kind=2),
+            _ase_layer("ink"),
+            _ase_cel(0, blue),
+            _ase_cel(3, red),
+        ])
+        result = media.decode_media(_ase_file(1, 1, [frame]), "skip.aseprite")
+        self.assertEqual(frame_image(result["frames"][0]).getpixel((0, 0)), (255, 0, 0, 255))
+        self.assertTrue(any("瓦片" in warning for warning in result["warnings"]))
+
+    def test_z_index_and_indexed_transparent_color(self):
+        palette = struct.pack("<III8s", 2, 0, 1, b"\0" * 8)
+        palette += struct.pack("<HBBBB", 0, 0, 0, 0, 0) + struct.pack("<HBBBB", 0, 0, 255, 0, 255)
+        back = _ase_layer("back", flags=1 | 8)
+        front = _ase_layer("front")
+        # Index 1 is green. Front cel z=-1 should paint behind the red background.
+        green = [bytes([1])]
+        red_rgba = self.rgba([255, 0, 0, 255])
+        indexed = _ase_frame([
+            _ase_chunk(0x2019, palette),
+            _ase_layer("ink"),
+            _ase_cel(0, green, bpp=1),
+        ])
+        indexed_result = media.decode_media(_ase_file(1, 1, [indexed], depth=8, transparent=0), "index.aseprite")
+        self.assertEqual(frame_image(indexed_result["frames"][0]).getpixel((0, 0)), (0, 255, 0, 255))
+        overlap = _ase_frame([
+            back,
+            front,
+            _ase_cel(0, red_rgba),
+            _ase_cel(1, self.rgba([0, 0, 255, 255]), z=-1),
+        ])
+        ordered = media.decode_media(_ase_file(1, 1, [overlap]), "order.aseprite")
+        self.assertEqual(frame_image(ordered["frames"][0]).getpixel((0, 0)), (255, 0, 0, 255))
+
+    def test_truncated_and_oversized_pixels_are_rejected(self):
+        with self.assertRaisesRegex(ValueError, "Aseprite"):
+            media.decode_media(b"\xe0\xa5" + b"\0" * 20, "bad.aseprite")
+        header = struct.pack("<IHHHH", 128, 0xA5E0, 1, 5000, 5000) + bytes(128 - 12)
+        with self.assertRaises(ValueError):
+            media.decode_media(header, "huge.aseprite")
+
+
+def _data_url(image):
+    return "data:image/png;base64," + base64.b64encode(encoded(image)).decode("ascii")
+
+
+def _piskel(width, height, layers, fps=10, hidden=None):
+    body = {"modelVersion": 2, "piskel": {
+        "name": "pet", "fps": fps, "width": width, "height": height,
+        "layers": [json.dumps(layer, separators=(",", ":")) for layer in layers],
+        "hiddenFrames": [] if hidden is None else hidden,
+    }}
+    return json.dumps(body).encode("utf-8")
+
+
+def _pxo(document, images):
+    blob = io.BytesIO()
+    with zipfile.ZipFile(blob, "w") as archive:
+        archive.writestr("data.json", json.dumps(document))
+        for (frame, layer), raw in images.items():
+            archive.writestr(f"image_data/frames/{frame}/layer_{layer}", raw)
+    return blob.getvalue()
+
+
+class OtherSpriteProjectTests(unittest.TestCase):
+    def test_piskel_composites_later_layers_and_drops_hidden_frames(self):
+        sheet = Image.new("RGBA", (2, 1))
+        sheet.putpixel((0, 0), (255, 0, 0, 255))
+        sheet.putpixel((1, 0), (0, 255, 0, 255))
+        top = Image.new("RGBA", (2, 1))
+        top.putpixel((0, 0), (0, 0, 255, 255))
+        result = media.decode_media(_piskel(1, 1, [
+            {"name": "back", "opacity": 1, "frameCount": 2, "base64PNG": _data_url(sheet)},
+            {"name": "front", "opacity": 0.5, "frameCount": 2, "chunks": [
+                {"layout": [[0], [1]], "base64PNG": _data_url(top)},
+            ]},
+        ], fps=10, hidden=[1, None]), "pet.piskel")
+        pixel = frame_image(result["frames"][0]).getpixel((0, 0))
+        self.assertEqual(len(result["frames"]), 1)
+        self.assertEqual(result["frames"][0]["durationMs"], 100)
+        self.assertEqual(pixel[2], 128)
+        self.assertGreater(pixel[0], 100)
+        self.assertEqual(result["clips"], [{"name": "pet", "indices": [0], "loop": True}])
+
+    def test_piskel_horizontal_strip_keeps_each_frame(self):
+        sheet = Image.new("RGBA", (3, 1))
+        sheet.putpixel((0, 0), (255, 0, 0, 255))
+        sheet.putpixel((1, 0), (0, 255, 0, 255))
+        sheet.putpixel((2, 0), (0, 0, 255, 255))
+        result = media.decode_media(_piskel(1, 1, [
+            {"name": "ink", "opacity": 1, "frameCount": 3, "base64PNG": _data_url(sheet)},
+        ]), "strip.piskel")
+        colors = [frame_image(frame).getpixel((0, 0)) for frame in result["frames"]]
+        self.assertEqual(colors, [(255, 0, 0, 255), (0, 255, 0, 255), (0, 0, 255, 255)])
+
+    def test_piskel_ignores_hidden_indexes_past_the_last_frame(self):
+        sheet = Image.new("RGBA", (2, 1))
+        sheet.putpixel((0, 0), (255, 0, 0, 255))
+        sheet.putpixel((1, 0), (0, 255, 0, 255))
+        result = media.decode_media(_piskel(1, 1, [
+            {"name": "ink", "opacity": 1, "frameCount": 2, "base64PNG": _data_url(sheet)},
+        ], hidden=[1, 2, None]), "pet.piskel")
+        self.assertEqual(len(result["frames"]), 1)
+        self.assertEqual(frame_image(result["frames"][0]).getpixel((0, 0)), (255, 0, 0, 255))
+
+    def test_piskel_rejects_unknown_version(self):
+        with self.assertRaisesRegex(ValueError, "Piskel"):
+            media.decode_media(b'{"modelVersion":1,"piskel":{}}', "old.piskel")
+
+    def test_pixelorama_paints_higher_layers_later_and_keeps_tags(self):
+        document = {
+            "pxo_version": 5, "size_x": 2, "size_y": 1, "color_mode": 5, "fps": 10,
+            "layers": [
+                {"name": "back", "type": 0, "visible": True, "opacity": 1, "blend_mode": 0},
+                {"name": "front", "type": 0, "visible": True, "opacity": 1, "blend_mode": 4},
+                {"name": "guide", "type": 0, "visible": False, "opacity": 1, "blend_mode": 0},
+                {"name": "tiles", "type": 3, "visible": True, "opacity": 1, "blend_mode": 0},
+            ],
+            "frames": [{"duration": 2, "cels": [
+                {"opacity": 1, "z_index": 0, "offset": "(0, 0)", "image_size": "(2, 1)"},
+                {"opacity": 1, "z_index": 0, "offset": "(1, 0)", "image_size": "(1, 1)"},
+                {"opacity": 1, "z_index": 0, "offset": "(0, 0)", "image_size": "(2, 1)"},
+                {"opacity": 1, "z_index": 0, "offset": "(0, 0)", "image_size": "(1, 1)"},
+            ]}],
+            "tags": [{"name": "walk", "from": 1, "to": 1}],
+        }
+        images = {
+            (1, 1): bytes([255, 0, 0, 255, 255, 0, 0, 255]),
+            (1, 2): bytes([0, 0, 255, 255]),
+            (1, 3): bytes([0, 255, 0, 255, 0, 255, 0, 255]),
+            (1, 4): bytes([9, 9, 9, 255]),
+        }
+        result = media.decode_media(_pxo(document, images), "pet.pxo")
+        image = frame_image(result["frames"][0])
+        self.assertEqual(image.getpixel((0, 0)), (255, 0, 0, 255))
+        self.assertEqual(image.getpixel((1, 0)), (0, 0, 255, 255))
+        self.assertEqual(result["frames"][0]["durationMs"], 200)
+        self.assertEqual(result["clips"], [{"name": "walk", "indices": [0], "loop": True}])
+        self.assertTrue(any("瓦片" in warning for warning in result["warnings"]))
+        self.assertTrue(any("混合" in warning for warning in result["warnings"]))
+
+    def test_old_pixelorama_file_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "Pixelorama"):
+            media.decode_media(b"not-a-zip", "old.pxo")
+
+
 if __name__ == "__main__":
     unittest.main()

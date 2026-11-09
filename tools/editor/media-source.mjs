@@ -35,7 +35,17 @@ export function validateDecodedMedia(data) {
     if(!clip || typeof clip.name!=='string' || !clip.name.trim() || clip.name.length>256 || typeof clip.loop!=='boolean' || !Array.isArray(clip.indices) || !clip.indices.length || clip.indices.length>256 || clip.indices.some(index=>!Number.isInteger(index)||index<0||index>=frames.length))throw new Error('素材动作标签引用无效。');
     return {name:clip.name.slice(0,80),indices:[...clip.indices],loop:clip.loop};
   });
-  return {format:data.format,name:stem(String(data.name || '导入素材')),frames,clips,warnings:(Array.isArray(data.warnings)?data.warnings:[]).slice(0,32).map(w=>String(w).slice(0,512)),pixels,bytes};
+  const slices=(Array.isArray(data.slices)?data.slices:[]).slice(0,32).map(slice=>{
+    if(!slice || typeof slice.name!=='string' || !slice.name.trim() || slice.name.length>80)throw new Error('切片名称无效。');
+    for (const key of ['x','y','width','height']) if(!Number.isInteger(slice[key]) || slice[key]<-4096 || slice[key]>4096)throw new Error('切片矩形无效。');
+    const placed={name:slice.name.trim(),x:slice.x,y:slice.y,width:slice.width,height:slice.height};
+    if(slice.pivotX!=null || slice.pivotY!=null){
+      if(!Number.isInteger(slice.pivotX)||!Number.isInteger(slice.pivotY))throw new Error('切片锚点无效。');
+      placed.pivotX=slice.pivotX; placed.pivotY=slice.pivotY;
+    }
+    return placed;
+  });
+  return {format:data.format,name:stem(String(data.name || '导入素材')),frames,clips,slices,warnings:(Array.isArray(data.warnings)?data.warnings:[]).slice(0,32).map(w=>String(w).slice(0,512)),pixels,bytes};
 }
 
 async function atlas(files,signal) {
@@ -60,8 +70,8 @@ export async function decodeMediaFiles(input,{signal,onProgress=()=>{}}={}) {
   if(!files.length || files.length>256)throw new Error('一次请选择 1–256 个文件。');
   let total=0;
   for(const file of files) {
-    if(!/\.(png|apng|gif|webp|jpe?g|json|zip)$/i.test(file.name))throw new Error('支持 PNG、GIF、APNG、WebP、JPEG、ZIP，或 Aseprite PNG + JSON。');
-    const cap=/\.zip$/i.test(file.name)?LIMITS.zip:/\.json$/i.test(file.name)?LIMITS.json:LIMITS.file;
+    if(!/\.(png|apng|gif|webp|jpe?g|json|zip|ase|aseprite|piskel|pxo)$/i.test(file.name))throw new Error('支持 PNG、GIF、APNG、WebP、JPEG、ZIP、Aseprite、Piskel、Pixelorama，或 Aseprite PNG + JSON。');
+    const cap=/\.(zip|pxo)$/i.test(file.name)?LIMITS.zip:/\.json$/i.test(file.name)?LIMITS.json:LIMITS.file;
     if(!file.size || file.size>cap)throw new Error(`${file.name} 超过文件大小上限。`);
     total+=file.size;if(total>LIMITS.total)throw new Error('所选文件合计不能超过 32 MiB。');
     if(pathOf(file).length>256)throw new Error('素材文件名或文件夹路径不能超过 256 个字符。');
@@ -86,7 +96,7 @@ export async function decodeMediaFiles(input,{signal,onProgress=()=>{}}={}) {
     const offset=frames.length;pixels+=data.pixels;bytes+=data.bytes;
     if(offset+data.frames.length>256 || pixels>LIMITS.pixels || bytes>LIMITS.png)throw new Error('整批解码结果超过 256 帧、16M 像素或 16 MiB PNG 上限。');
     frames.push(...data.frames);warnings.push(...data.warnings);
-    const hasMotion=data.frames.length>1 && ['gif','apng','webp','aseprite'].includes(data.format) || ['aseprite','zip'].includes(data.format);
+    const hasMotion=data.frames.length>1 && ['gif','apng','webp','aseprite','piskel','pixelorama'].includes(data.format) || ['aseprite','zip','piskel','pixelorama'].includes(data.format);
     animated ||= hasMotion;
     if(data.clips.length)clips.push(...data.clips.map(clip=>({...clip,indices:clip.indices.map(index=>index+offset)})));
     else if(hasMotion)clips.push({name:data.name,indices:data.frames.map((_,index)=>offset+index),loop:true});
@@ -95,5 +105,5 @@ export async function decodeMediaFiles(input,{signal,onProgress=()=>{}}={}) {
   for(const [directory,indices] of directories)clips.push({name:stem(directory.split('/').at(-1)||results[0].data.name),indices,loop:true});
   if(!clips.length)clips.push({name:results[0].data.name,indices:frames.map((_,index)=>index),loop:true});
   onProgress({completed:files.length,total:files.length});
-  return {format:results.length===1?results[0].data.format:'batch',name:results.length===1?results[0].data.name:stem(files[0].name),frames,clips,warnings:[...new Set(warnings)],fileNames:files.map(pathOf),animated,gridEligible:!animated && files.length===1 && frames.length===1};
+  return {format:results.length===1?results[0].data.format:'batch',name:results.length===1?results[0].data.name:stem(files[0].name),frames,clips,slices:results.length===1?results[0].data.slices:[],warnings:[...new Set(warnings)],fileNames:files.map(pathOf),animated,gridEligible:!animated && files.length===1 && frames.length===1};
 }
