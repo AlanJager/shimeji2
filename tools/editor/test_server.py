@@ -1,6 +1,7 @@
 import copy
 import io
 import json
+import os
 import unittest
 import xml.etree.ElementTree as ET
 import zipfile
@@ -207,6 +208,78 @@ class EditorExportTests(unittest.TestCase):
         front["zOrder"] = -1
         frames, rendered = parts.bake_action(project, action, images)
         self.assertEqual(Image.open(io.BytesIO(rendered[frames[0]["assetId"]])).getpixel((0, 0)), (255, 0, 0, 255))
+
+
+class HostedServiceTests(unittest.TestCase):
+    def tearDown(self):
+        os.environ.pop("VERCEL", None)
+
+    def test_local_editor_rejects_any_other_host(self):
+        self.assertTrue(server.request_allowed("127.0.0.1:4317", None, 4317, False))
+        self.assertTrue(server.request_allowed("localhost:4317", "http://localhost:4317", 4317, False))
+        self.assertFalse(server.request_allowed("editor.vercel.app", None, 4317, False))
+        self.assertFalse(server.request_allowed("127.0.0.1:4317", "https://editor.vercel.app", 4317, False))
+
+    def test_hosted_editor_accepts_only_its_own_site(self):
+        self.assertTrue(server.request_allowed("editor.vercel.app", "https://editor.vercel.app", 443, True))
+        self.assertTrue(server.request_allowed("editor.vercel.app:443", None, 443, True))
+        self.assertFalse(server.request_allowed("editor.vercel.app", "https://evil.example", 443, True))
+        self.assertFalse(server.request_allowed("evil.example/editor", None, 443, True))
+
+    def test_hosted_catalog_lists_sources_without_downloading_a_pack(self):
+        os.environ["VERCEL"] = "1"
+        listed = self.exchange("GET", "/api/catalog")
+        self.assertEqual(listed.status, 200)
+        self.assertIn("sources", json.loads(listed.body))
+        opened = self.exchange("POST", "/api/catalog/open", b'{"id":"wispy-miku"}')
+        self.assertEqual(opened.status, 400)
+        self.assertIn("不代下载", json.loads(opened.body)["error"])
+
+    def test_hosted_media_over_four_megabytes_is_refused_before_decoding(self):
+        os.environ["VERCEL"] = "1"
+        refused = self.exchange("POST", "/api/media/decode?name=big.png", b"x",
+                                length=server.HOSTED_BODY + 1)
+        self.assertEqual(refused.status, 400)
+        self.assertIn("4 MB", json.loads(refused.body)["error"])
+
+    def exchange(self, method, path, body=b"", length=None):
+        payload = body if length is None else b""
+        headers = {
+            "Host": "editor.vercel.app",
+            "Origin": "https://editor.vercel.app",
+            "Content-Length": str(len(body) if length is None else length),
+        }
+        bridge = Call(path, headers, payload)
+        if method == "POST":
+            server.Handler.do_POST(bridge)
+        else:
+            server.Handler.do_GET(bridge)
+        bridge.body = bridge.wfile.getvalue()
+        return bridge
+
+
+class Call(server.Handler):
+    def __init__(self, path, headers, body):
+        self.path = path
+        self.headers = headers
+        self.rfile = io.BytesIO(body)
+        self.wfile = io.BytesIO()
+        self.connection = SimpleNamespace(settimeout=lambda _timeout: None)
+        self.server = SimpleNamespace(server_port=443)
+        self.status = None
+        self.body = b""
+
+    def send_response(self, code, message=None):
+        self.status = code
+
+    def send_header(self, key, value):
+        return None
+
+    def end_headers(self):
+        return None
+
+    def log_message(self, fmt, *args):
+        return None
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ import base64
 import binascii
 import io
 import json
+import os
 from pathlib import Path
 import re
 import struct
@@ -29,6 +30,8 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 SHIME = ROOT / "assets/packs/shime"
 MAX_BODY = 24 * 1024 * 1024
+# Vercel Functions reject request and response bodies above 4.5 MB.
+HOSTED_BODY = 4 * 1024 * 1024
 PNG_PREFIX = "data:image/png;base64,"
 NS = "{http://www.group-finity.com/Mascot}"
 EVENTS = {"click", "pet", "enter", "drag", "release", "idle"}
@@ -331,6 +334,34 @@ def export_pack(project):
     return out.getvalue()
 
 
+def hosted_deployment():
+    return os.environ.get("VERCEL") == "1"
+
+
+def request_host(headers, hosted):
+    if hosted:
+        forwarded = headers.get("X-Forwarded-Host")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+    return (headers.get("Host") or "").split(",")[0].strip()
+
+
+def request_allowed(host, origin, port, hosted):
+    """Local use stays on localhost. A hosted site may only call itself."""
+    host = (host or "").split(",")[0].strip()
+    if hosted:
+        if host.endswith(":443"):
+            host = host[:-4]
+        if not host or any(char in host for char in " /\\\r\n"):
+            return False
+        allowed = {f"https://{host}", f"http://{host}"}
+    else:
+        if host not in {f"127.0.0.1:{port}", f"localhost:{port}"}:
+            return False
+        allowed = {f"http://{host}"}
+    return origin is None or origin in allowed
+
+
 class Handler(BaseHTTPRequestHandler):
     def media_request(self, route):
         if not MEDIA_SLOTS.acquire(blocking=False):
@@ -338,8 +369,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
-            if not 0 < length <= 16 * 1024 * 1024:
-                raise ValueError("单次素材请求需在 16 MiB 以内")
+            limit = HOSTED_BODY if hosted_deployment() else 16 * 1024 * 1024
+            if not 0 < length <= limit:
+                raise ValueError("线上单次素材需在 4 MB 以内，更大的文件请用本机编辑器" if hosted_deployment() else "单次素材请求需在 16 MiB 以内")
             self.connection.settimeout(15)
             body = self.rfile.read(length)
             if len(body) != length:
@@ -366,6 +398,11 @@ class Handler(BaseHTTPRequestHandler):
             MEDIA_SLOTS.release()
 
     def respond(self, status, body, content_type, immutable=False):
+        if hosted_deployment() and len(body) > HOSTED_BODY:
+            status = 400
+            content_type = "application/json; charset=utf-8"
+            body = json.dumps({"error": "线上结果超过 4 MB，请改用本机编辑器。"}, ensure_ascii=False).encode()
+            immutable = False
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
@@ -376,11 +413,10 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def local_request(self):
-        host = self.headers.get("Host", "")
-        allowed = {f"127.0.0.1:{self.server.server_port}", f"localhost:{self.server.server_port}"}
-        origin = self.headers.get("Origin")
-        if host not in allowed or (origin is not None and origin != f"http://{host}"):
-            self.respond(403, b"Local editor requests only", "text/plain")
+        hosted = hosted_deployment()
+        host = request_host(self.headers, hosted)
+        if not request_allowed(host, self.headers.get("Origin"), self.server.server_port, hosted):
+            self.respond(403, b"Editor requests must come from this site", "text/plain")
             return False
         return True
 
@@ -417,11 +453,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
-            if not 0 < length <= MAX_BODY:
-                raise ValueError("工程大小需在 24 MB 以内")
+            limit = HOSTED_BODY if hosted_deployment() else MAX_BODY
+            if not 0 < length <= limit:
+                raise ValueError("线上工程需在 4 MB 以内，更大的工程请用本机编辑器" if hosted_deployment() else "工程大小需在 24 MB 以内")
             self.connection.settimeout(10)
             project = json.loads(self.rfile.read(length))
             if self.path == "/api/catalog/open":
+                if hosted_deployment():
+                    raise ValueError("线上服务只展示素材目录，不代下载角色包。请使用本机编辑器导入。")
                 source = catalog.source_by_id(project.get("id"))
                 archive = catalog.checked_archive(source)
                 converted = catalog.editor_project(source, archive)
