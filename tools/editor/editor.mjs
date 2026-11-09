@@ -1,4 +1,4 @@
-import {TICK_MS, EVENTS, Preview, HoverTracker, clone, totalTicks, validateProject, hitRegion, upgradeProject, composeParts, partPose, poseOf, setPartKey, removePart} from './model.mjs';
+import {TICK_MS, EVENTS, Preview, HoverTracker, clone, totalTicks, validateProject, hitRegion, upgradeProject, composeParts, paintParts, partPose, poseOf, setPartKey, removePart} from './model.mjs';
 import {setupCatalog} from './catalog.mjs';
 import {setupFrameTimeline} from './authoring-timeline.mjs';
 import {setupSequenceImport} from './sequence-import.mjs';
@@ -8,6 +8,7 @@ import {setupVrmStudio} from './vrm-studio.mjs';
 import {prepareVrmAction} from './vrm-integration.mjs';
 import {prepareMediaImport} from './media-integration.mjs';
 import {setupAssetLibrary} from './asset-library.mjs';
+import {applyFramePixels, assetUseCount, setupPixelPaint} from './pixel-edit.mjs';
 
 const $ = id => document.getElementById(id);
 const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
@@ -40,7 +41,7 @@ function ensurePartSelection() {
 
 function makePart(assetId, id = uid('part')) {
   return {id, name: (asset(assetId)?.name ?? '新部件').replace(/\.png$/i, ''), assetId, parentId: null,
-    x: 64, y: 128, pivotX: 64, pivotY: 128, rotation: 0, scaleX: 1, scaleY: 1, visible: true};
+    x: 64, y: 128, pivotX: 64, pivotY: 128, rotation: 0, scaleX: 1, scaleY: 1, opacity: 1, zOrder: 0, visible: true};
 }
 
 function activateParts(p, id) {
@@ -284,7 +285,8 @@ function renderPartInspector() {
   $('part-asset').innerHTML = options(project.assets, pose.assetId);
   $('part-scope').value = isParts() ? poseScope : 'base';
   $('part-scope').disabled = !isParts();
-  for (const field of ['x', 'y', 'rotation', 'scaleX', 'scaleY']) $('part-' + field).value = Math.round(pose[field] * 1000) / 1000;
+  for (const field of ['x', 'y', 'rotation', 'scaleX', 'scaleY', 'opacity']) $('part-' + field).value = Math.round(pose[field] * 1000) / 1000;
+  $('part-z').value = pose.zOrder ?? 0;
   for (const field of ['pivotX', 'pivotY']) $('part-' + field).value = part[field];
   $('part-visible').checked = pose.visible;
   const track = currentTrack(part.id);
@@ -349,8 +351,8 @@ function renderDynamic() {
   if (image.getAttribute('y') !== String(f.y)) image.setAttribute('y', f.y);
   if (multipart) {
     const source = partDraft ?? project;
-    const composed = composeParts(source, source.actions.find(a => a.id === preview.actionId), preview.elapsed);
-    let markup = composed.filter(part => part.visible).map(part => `<image data-preview-part="${escape(part.id)}" width="128" height="128" href="${escape(asset(part.assetId).src)}" transform="matrix(${part.imageMatrix.join(' ')})"/>`).join('');
+    const composed = paintParts(composeParts(source, source.actions.find(a => a.id === preview.actionId), preview.elapsed));
+    let markup = composed.filter(part => part.visible && (part.opacity ?? 1) > 0).map(part => `<image data-preview-part="${escape(part.id)}" width="128" height="128" href="${escape(asset(part.assetId).src)}" opacity="${part.opacity ?? 1}" transform="matrix(${part.imageMatrix.join(' ')})"/>`).join('');
     const selected = composed.find(part => part.id === selectedPartId);
     if (selected && panel === 'parts' && mode === 'edit') markup += `<circle class="part-pivot" cx="${selected.matrix[4]}" cy="${selected.matrix[5]}" r="1.5"/>`;
     if (markup !== partsMarkup) { $('parts-canvas').innerHTML = markup; partsMarkup = markup; }
@@ -476,7 +478,15 @@ $('frame-track').addEventListener('dragover', e => { e.preventDefault(); const c
 $('frame-track').addEventListener('dragleave', e => e.target.closest('[data-frame]')?.classList.remove('drag-over'));
 $('frame-track').addEventListener('drop', e => {
   e.preventDefault();
+  const files = [...e.dataTransfer.files];
   const cell = e.target.closest('[data-frame]');
+  if (files.length) {
+    e.stopPropagation();
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    if (cell && !isParts()) sequenceImport.open(files, {insertAfterFrameId: action().frames[Number(cell.dataset.frame)].id}).catch(error => toast(error.message));
+    else importImages(files);
+    return;
+  }
   if (cell && Number.isInteger(draggedFrame)) moveFrame(draggedFrame, Number(cell.dataset.frame));
   draggedFrame = undefined;
 });
@@ -531,7 +541,8 @@ $('part-scope').onchange = e => { poseScope = e.target.value; renderPartInspecto
 $('part-name').onchange = e => { const id = selectedPartId; edit(p => { p.parts.find(part => part.id === id).name = e.target.value.trim(); }); };
 $('part-parent').onchange = e => { const id = selectedPartId, value = e.target.value || null; edit(p => { p.parts.find(part => part.id === id).parentId = value; }); };
 for (const field of ['pivotX', 'pivotY']) $('part-' + field).onchange = e => { const id = selectedPartId, value = Number(e.target.value); edit(p => { p.parts.find(part => part.id === id)[field] = value; }); };
-for (const field of ['x', 'y', 'rotation', 'scaleX', 'scaleY']) $('part-' + field).onchange = e => changePartPose(field, Number(e.target.value));
+for (const field of ['x', 'y', 'rotation', 'scaleX', 'scaleY', 'opacity']) $('part-' + field).onchange = e => changePartPose(field, Number(e.target.value));
+$('part-z').onchange = e => changePartPose('zOrder', Number(e.target.value));
 $('part-asset').onchange = e => changePartPose('assetId', e.target.value);
 $('part-visible').onchange = e => changePartPose('visible', e.target.checked);
 $('save-part-key').onclick = () => {
@@ -793,6 +804,13 @@ try {
     getState: () => ({action: action(), selectedFrame, mode, assetIds:project.assets.map(a => a.id)}), toast, idFactory: uid,
     onSelect: selectFrame, onSelectionChange: () => render(),
     onPlayRange: () => { const range = bulkTimeline.playbackRange(); if (range) { preview.elapsed = range.start; playing = true; renderDynamic(); } },
+    onCreateAction: copies => {
+      if (project.actions.length >= 64) return toast('一个工程最多 64 个动作。');
+      const id = uid('action');
+      const created = copies.map(frame => ({id: uid('frame'), assetId: frame.assetId, ticks: frame.ticks, x: frame.x ?? 0, y: frame.y ?? 0}));
+      if (!edit(p => { p.actions.push({id, name: `${action().name} 片段`.slice(0, 80), kind: 'frames', loop: true, frames: created}); }, '已把连续选区建成动作 · 可撤销。')) return;
+      selectAction(id);
+    },
     onFrames: result => {
       const id = selectedActionId, before = selectedFrame, previous = bulkTimeline.selection();
       selectedFrame = result.frames.findIndex(f => f.id === result.focusId);
@@ -802,6 +820,18 @@ try {
       }
     },
   });
+  const pixelPaint = setupPixelPaint({toast,
+    getFrame: () => {
+      if (isParts()) return null;
+      const current = frame();
+      return {frameId: current.id, src: asset(current.assetId).src, shared: assetUseCount(project, current.assetId)};
+    },
+    onApply: (frameId, src) => {
+      const actionId = selectedActionId;
+      edit(p => { applyFramePixels(p, actionId, frameId, src, uid); }, '已写回当前帧 · 可撤销。');
+    },
+  });
+  $('paint-frame').onclick = () => pixelPaint.open();
   sequenceImport = setupSequenceImport({toast,
     getContext: () => ({projectToken:project,kind:action().kind,assetCount:project.assets.length,frameCount:action().frames.length,partCount:project.parts.length,actionCount:project.actions.length}),
     onImport: payload => {
@@ -811,7 +841,14 @@ try {
       const accepted = edit(p => {
         prepared.apply(p);
         if (prepared.parts) {
-          for (const item of prepared.partAssets) p.parts.push({...makePart(item.id),name:item.name.replace(/\.png$/i,'')});
+          for (const item of prepared.partAssets) {
+            const part = {...makePart(item.id), name: item.name.replace(/\.png$/i, '')};
+            if (prepared.pivot && prepared.partAssets.length === 1) {
+              part.pivotX = Math.max(-256, Math.min(256, prepared.pivot.x));
+              part.pivotY = Math.max(-256, Math.min(256, prepared.pivot.y));
+            }
+            p.parts.push(part);
+          }
         }
       },payload.destination === 'replace' ? '已替换图片，动作时长与引用保持不变。' : `已导入素材组“${payload.groupName}” · 可撤销。`);
       if (!accepted) throw new Error('工程没有应用此次导入，请检查素材和帧数上限。');

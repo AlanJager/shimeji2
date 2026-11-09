@@ -89,6 +89,7 @@
         <p id="frame-duration" class="field-help">1 tick = 40 ms</p>
         <div class="two-fields"><label>水平偏移<div class="input-unit"><input id="frame-x" type="number" min="-128" max="128" step="1"><span>px</span></div></label><label>垂直偏移<div class="input-unit"><input id="frame-y" type="number" min="-128" max="128" step="1"><span>px</span></div></label></div>
         <div class="two-fields frame-order"><button id="frame-left">← 前移一帧</button><button id="frame-right">后移一帧 →</button></div>
+        <button id="paint-frame" class="small" type="button">补这一帧</button>
         </div>
         <div class="inspector-note"><strong>帧动画与部件动画都可导出</strong><p>多部件动画在下方为每个部件单独记录关键帧。导出包同时保存可编辑的工程、合成动画和互动规则。</p></div>
       </div>
@@ -104,6 +105,7 @@
           <div class="two-fields"><label>旋转中心 X<input id="part-pivotX" type="number" min="-256" max="256" step="1"></label><label>旋转中心 Y<input id="part-pivotY" type="number" min="-256" max="256" step="1"></label></div>
           <label>旋转角度 / °<input id="part-rotation" type="number" min="-3600" max="3600" step="1"></label>
           <div class="two-fields"><label>水平缩放<input id="part-scaleX" type="number" min="0.05" max="4" step="0.05"></label><label>垂直缩放<input id="part-scaleY" type="number" min="0.05" max="4" step="0.05"></label></div>
+          <div class="two-fields"><label>不透明度<input id="part-opacity" type="number" min="0" max="1" step="0.05"></label><label>遮挡顺序<input id="part-z" type="number" min="-32" max="32" step="1"></label></div>
           <div class="switch-row"><label for="part-visible">显示部件</label><input id="part-visible" type="checkbox" role="switch"></div>
           <div class="two-fields"><button id="save-part-key" class="primary small">记录当前关键帧</button><button id="delete-part-key" class="small">删除当前关键帧</button></div>
           <div class="two-fields part-order"><button id="part-back" class="small">↓ 后移一层</button><button id="part-front" class="small">↑ 前移一层</button></div>
@@ -127,7 +129,7 @@
   <dialog id="export-dialog"><form method="dialog"><span class="eyebrow">EXPORT</span><h2>带走你的动作与互动</h2><p>动作包可导入新版 shimeji2。多部件动画会按 40 ms 合成完整帧，触摸区域和互动规则随包执行。</p><p class="export-note">ZIP 同时保留全部源部件、父子关系和关键帧，以及可继续编辑的工程文件。固定画布为 128 × 128，超出画布的部分会裁切。</p><div class="dialog-actions"><button value="cancel">再编辑一下</button><button id="confirm-export" type="button" class="primary">下载动作包 ZIP ↗</button></div></form></dialog>
   <dialog id="confirm-dialog"><form method="dialog"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="dialog-actions"><button value="cancel">取消</button><button value="ok" class="primary">继续</button></div></form></dialog>
   <input id="project-file" type="file" accept=".json,application/json" hidden>
-  <input id="image-files" type="file" accept=".png,.apng,.gif,.webp,.jpg,.jpeg,.zip,.json" multiple hidden>
+  <input id="image-files" type="file" accept=".png,.apng,.gif,.webp,.jpg,.jpeg,.zip,.json,.ase,.aseprite,.piskel,.pxo" multiple hidden>
   <input id="folder-files" type="file" webkitdirectory multiple hidden>
 </body>
 </html>
