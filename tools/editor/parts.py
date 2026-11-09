@@ -26,6 +26,10 @@ def validate_pose(pose, asset_ids):
         number(pose[field], 0.05, 4)
     if type(pose["visible"]) is not bool or pose["assetId"] not in asset_ids:
         raise ValueError("部件图片或可见性无效")
+    if "opacity" in pose:
+        number(pose["opacity"], 0, 1)
+    if "zOrder" in pose and (type(pose["zOrder"]) is not int or not -32 <= pose["zOrder"] <= 32):
+        raise ValueError("部件遮挡顺序需要是 -32 到 32 的整数")
 
 
 def validate_parts(project, asset_ids):
@@ -102,7 +106,10 @@ def pose_at(part, action, tick):
     for left, right in zip(keys, keys[1:]):
         if tick < right["tick"]:
             mix = (tick - left["tick"]) / (right["tick"] - left["tick"])
-            return {**left, **{field: left[field] + (right[field] - left[field]) * mix for field in FIELDS}}
+            pose = {**left, **{field: left[field] + (right[field] - left[field]) * mix for field in FIELDS}}
+            pose["opacity"] = left.get("opacity", 1) + (right.get("opacity", 1) - left.get("opacity", 1)) * mix
+            pose["zOrder"] = left.get("zOrder", 0)
+            return pose
     return keys[-1]
 
 
@@ -125,7 +132,8 @@ def compose_parts(project, action, tick):
             visible = visible and parent["visible"]
         image_matrix = multiply(matrix, (1, 0, 0, 1, -part["pivotX"], -part["pivotY"]))
         resolved[part["id"]] = {"id": part["id"], "assetId": pose["assetId"],
-                                 "nodeMatrix": matrix, "matrix": image_matrix, "visible": visible}
+                                 "nodeMatrix": matrix, "matrix": image_matrix, "visible": visible,
+                                 "opacity": pose.get("opacity", 1), "zOrder": pose.get("zOrder", 0)}
         return resolved[part["id"]]
 
     return [resolve(part) for part in project.get("parts", [])]
@@ -140,8 +148,9 @@ def bake_action(project, action, source_bytes):
     frames, images = [], {}
     for tick in range(action["durationTicks"]):
         canvas = Image.new("RGBA", (128, 128))
-        for part in compose_parts(project, action, tick):
-            if not part["visible"]:
+        composed = sorted(enumerate(compose_parts(project, action, tick)), key=lambda item: (item[1]["zOrder"], item[0]))
+        for _order, part in composed:
+            if not part["visible"] or part["opacity"] <= 0:
                 continue
             if part["assetId"] not in assets:
                 image = Image.open(io.BytesIO(source_bytes[part["assetId"]]))
@@ -154,6 +163,9 @@ def bake_action(project, action, source_bytes):
                        -b / determinant, a / determinant, (b * e - a * f) / determinant)
             warped = assets[part["assetId"]].transform((128, 128), Image.Transform.AFFINE, inverse,
                                                      resample=Image.Resampling.NEAREST)
+            if part["opacity"] < 1:
+                red, green, blue, alpha = warped.split()
+                warped.putalpha(alpha.point(lambda value, scale=part["opacity"]: int(value * scale + 0.5)))
             canvas = Image.alpha_composite(canvas, warped)
         ident = "baked-" + hashlib.sha256(canvas.tobytes()).hexdigest()[:24]
         if ident not in images:

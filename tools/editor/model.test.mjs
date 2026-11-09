@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Preview, HoverTracker, frameAt, hitRegion, validateProject, upgradeProject, composeParts, partPose, setPartKey, poseOf, removePart, totalTicks} from './model.mjs';
+import {Preview, HoverTracker, frameAt, hitRegion, validateProject, upgradeProject, composeParts, paintParts, partPose, setPartKey, poseOf, removePart, totalTicks} from './model.mjs';
 
 const frame = (id, ticks = 2) => ({id, assetId: 'shime1', ticks, x: 0, y: 0});
 function project() {
@@ -160,6 +160,20 @@ test('parent rotation transforms child position and fixed pivots without changin
   const image = composed[0].imageMatrix;
   assert.ok(Math.abs((image[0]*8 + image[2]*12 + image[4]) - 104) < 1e-9);
   assert.ok(Math.abs((image[1]*8 + image[3]*12 + image[5]) - 138) < 1e-9);
+});
+
+test('opacity fades across keys while draw order stays on the earlier key', () => {
+  const p = multipart(), a = p.actions[1], hand = p.parts[1];
+  setPartKey(a, hand.id, 0, {...poseOf(hand), opacity: 1, zOrder: 0});
+  setPartKey(a, hand.id, 20, {...poseOf(hand), opacity: 0, zOrder: 4});
+  assert.equal(partPose(hand, a, 10).opacity, 0.5);
+  assert.equal(partPose(hand, a, 10).zOrder, 0);
+  assert.equal(partPose(hand, a, 20).zOrder, 4);
+  hand.zOrder = -1;
+  assert.equal(paintParts(composeParts(p, a, 0))[0].id, 'body');
+  assert.equal(paintParts(composeParts(p, a, 0)).at(-1).id, 'hand');
+  p.parts[1].zOrder = -2;
+  assert.equal(paintParts(composeParts(p, p.actions[0], 0))[0].id, 'hand');
 });
 
 test('numeric keys interpolate while image and visibility switch at their key tick', () => {

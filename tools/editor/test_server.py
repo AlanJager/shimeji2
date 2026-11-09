@@ -185,6 +185,29 @@ class EditorExportTests(unittest.TestCase):
         frames, rendered = parts.bake_action(project, action, images)
         self.assertIsNone(Image.open(io.BytesIO(rendered[frames[0]["assetId"]])).getbbox())
 
+    def test_higher_draw_order_paints_later_and_opacity_scales_alpha(self):
+        from PIL import Image
+        red = Image.new("RGBA", (128, 128), (255, 0, 0, 255))
+        blue = Image.new("RGBA", (128, 128), (0, 0, 255, 255))
+        images = {}
+        for name, image in [("red", red), ("blue", blue)]:
+            data = io.BytesIO()
+            image.save(data, format="PNG")
+            images[name] = data.getvalue()
+        back = {"id": "back", "name": "Back", "assetId": "red", "parentId": None,
+                "x": 0, "y": 0, "pivotX": 0, "pivotY": 0, "rotation": 0,
+                "scaleX": 1, "scaleY": 1, "visible": True, "opacity": 1, "zOrder": 0}
+        front = {**back, "id": "front", "name": "Front", "assetId": "blue", "opacity": 0.5, "zOrder": 1}
+        action = {"kind": "parts", "durationTicks": 1, "tracks": []}
+        project = {"parts": [front, back], "actions": [action]}
+        frames, rendered = parts.bake_action(project, action, images)
+        pixel = Image.open(io.BytesIO(rendered[frames[0]["assetId"]])).getpixel((0, 0))
+        self.assertEqual(pixel[2], 128)
+        self.assertGreater(pixel[0], 100)
+        front["zOrder"] = -1
+        frames, rendered = parts.bake_action(project, action, images)
+        self.assertEqual(Image.open(io.BytesIO(rendered[frames[0]["assetId"]])).getpixel((0, 0)), (255, 0, 0, 255))
+
 
 if __name__ == "__main__":
     unittest.main()

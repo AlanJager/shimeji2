@@ -1,5 +1,5 @@
 // View-only authoring helpers. These do not mutate or add fields to projects.
-import {composeParts, frameAt, totalTicks} from './model.mjs';
+import {composeParts, frameAt, paintParts, totalTicks} from './model.mjs';
 
 const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
 const wrapTick = (tick, duration) => ((tick % duration) + duration) % duration;
@@ -50,9 +50,9 @@ export function onionSamples(action, tick, {count = 1, wrap = Boolean(action.loo
 export function poseImages(project, action, tick) {
   const assets = new Map(project.assets.map(asset => [asset.id, asset]));
   if (action.kind === 'parts') {
-    return composeParts(project, action, tick).filter(part => part.visible && assets.has(part.assetId)).map(part => ({
+    return paintParts(composeParts(project, action, tick)).filter(part => part.visible && (part.opacity ?? 1) > 0 && assets.has(part.assetId)).map(part => ({
       id: part.id, assetId: part.assetId, src: assets.get(part.assetId).src,
-      matrix: [...part.imageMatrix],
+      matrix: [...part.imageMatrix], opacity: part.opacity ?? 1,
     }));
   }
   const {frame} = frameAt(action, tick);
@@ -62,7 +62,7 @@ export function poseImages(project, action, tick) {
 
 /** Images deliberately have no editor data attributes or event handlers. */
 export function poseMarkup(images) {
-  return images.map(image => `<image width="128" height="128" href="${escape(image.src)}" transform="matrix(${image.matrix.join(' ')})" pointer-events="none"/>`).join('');
+  return images.map(image => `<image width="128" height="128" href="${escape(image.src)}"${image.opacity != null && image.opacity !== 1 ? ` opacity="${image.opacity}"` : ''} transform="matrix(${image.matrix.join(' ')})" pointer-events="none"/>`).join('');
 }
 
 export function currentPose({project, action, tick, partDraft}) {

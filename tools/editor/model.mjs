@@ -8,6 +8,14 @@ const idPattern = /^[a-zA-Z0-9_-]{1,64}$/;
 
 export function upgradeProject(input) {
   const project = clone(input);
+  for (const part of project.parts ?? []) {
+    part.opacity ??= 1;
+    part.zOrder ??= 0;
+  }
+  for (const action of project.actions ?? []) for (const track of action.tracks ?? []) for (const key of track.keys ?? []) {
+    key.opacity ??= 1;
+    key.zOrder ??= 0;
+  }
   validateProject(project);
   project.version = 2;
   project.parts ??= [];
@@ -15,7 +23,10 @@ export function upgradeProject(input) {
   return project;
 }
 
-export const poseOf = part => Object.fromEntries(['x', 'y', 'rotation', 'scaleX', 'scaleY', 'visible', 'assetId'].map(key => [key, part[key]]));
+export const poseOf = part => ({
+  x: part.x, y: part.y, rotation: part.rotation, scaleX: part.scaleX, scaleY: part.scaleY,
+  visible: part.visible, assetId: part.assetId, opacity: part.opacity ?? 1, zOrder: part.zOrder ?? 0,
+});
 
 export function partPose(part, action, tick) {
   const keys = action.tracks?.find(track => track.partId === part.id)?.keys;
@@ -27,7 +38,15 @@ export function partPose(part, action, tick) {
   const ratio = (tick - left.tick) / (right.tick - left.tick);
   const result = poseOf(left);
   for (const field of ['x', 'y', 'rotation', 'scaleX', 'scaleY']) result[field] = left[field] + (right[field] - left[field]) * ratio;
+  result.opacity = (left.opacity ?? 1) + ((right.opacity ?? 1) - (left.opacity ?? 1)) * ratio;
+  result.zOrder = left.zOrder ?? 0;
   return result;
+}
+
+export function paintParts(parts) {
+  return parts.map((part, index) => ({part, index}))
+    .sort((a, b) => (a.part.zOrder ?? 0) - (b.part.zOrder ?? 0) || a.index - b.index)
+    .map(item => item.part);
 }
 
 export function multiply(a, b) {
@@ -94,6 +113,7 @@ export function validateProject(project) {
   const finite = (n, lo, hi) => typeof n === 'number' && Number.isFinite(n) && n >= lo && n <= hi;
   const poseValid = pose => finite(pose.x, -256, 256) && finite(pose.y, -256, 256) &&
     finite(pose.rotation, -3600, 3600) && finite(pose.scaleX, .05, 4) && finite(pose.scaleY, .05, 4) &&
+    finite(pose.opacity ?? 1, 0, 1) && Number.isInteger(pose.zOrder ?? 0) && (pose.zOrder ?? 0) >= -32 && (pose.zOrder ?? 0) <= 32 &&
     typeof pose.visible === 'boolean' && assets.has(pose.assetId);
   for (const part of project.parts ?? []) {
     if (!named(part.name, 80) || !poseValid(part) ||
