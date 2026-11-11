@@ -10,6 +10,7 @@ members = [
     "crates/shimeji-windows",
     "crates/shimeji-hook",
     "crates/shimeji-forge",
+    "crates/shimeji-editor",
 ]
 
 [workspace.package]

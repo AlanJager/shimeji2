@@ -27,7 +27,7 @@ from dance import standing_dance
 from media import decode_media, decode_atlas
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent.parent
+ROOT = Path(os.environ["SHIMEJI_EDITOR_ROOT"]) if os.environ.get("SHIMEJI_EDITOR_ROOT") else HERE.parent.parent
 SHIME = ROOT / "assets/packs/shime"
 MAX_BODY = 24 * 1024 * 1024
 # Vercel Functions reject request and response bodies above 4.5 MB.
@@ -335,7 +335,7 @@ def export_pack(project):
 
 
 def hosted_deployment():
-    return os.environ.get("VERCEL") == "1"
+    return os.environ.get("VERCEL") == "1" or os.environ.get("EDGEONE") == "1"
 
 
 def request_host(headers, hosted):

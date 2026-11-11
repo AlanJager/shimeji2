@@ -1,0 +1,9 @@
+{
+  "buildCommand": "sh scripts/prepare-edgeone.sh",
+  "outputDirectory": "edgeone-public",
+  "cloudFunctions": {
+    "python": {
+      "maxDuration": 60
+    }
+  }
+}

@@ -2,6 +2,7 @@ import copy
 import io
 import json
 import os
+from pathlib import Path
 import unittest
 import xml.etree.ElementTree as ET
 import zipfile
@@ -213,6 +214,7 @@ class EditorExportTests(unittest.TestCase):
 class HostedServiceTests(unittest.TestCase):
     def tearDown(self):
         os.environ.pop("VERCEL", None)
+        os.environ.pop("EDGEONE", None)
 
     def test_local_editor_rejects_any_other_host(self):
         self.assertTrue(server.request_allowed("127.0.0.1:4317", None, 4317, False))
@@ -225,6 +227,13 @@ class HostedServiceTests(unittest.TestCase):
         self.assertTrue(server.request_allowed("editor.vercel.app:443", None, 443, True))
         self.assertFalse(server.request_allowed("editor.vercel.app", "https://evil.example", 443, True))
         self.assertFalse(server.request_allowed("evil.example/editor", None, 443, True))
+
+    def test_edgeone_uses_the_same_hosted_limits(self):
+        os.environ["EDGEONE"] = "1"
+        self.assertTrue(server.hosted_deployment())
+        opened = self.exchange("POST", "/api/catalog/open", b'{"id":"wispy-miku"}')
+        self.assertEqual(opened.status, 400)
+        self.assertIn("不代下载", json.loads(opened.body)["error"])
 
     def test_hosted_catalog_lists_sources_without_downloading_a_pack(self):
         os.environ["VERCEL"] = "1"
@@ -280,6 +289,18 @@ class Call(server.Handler):
 
     def log_message(self, fmt, *args):
         return None
+
+
+class EdgeOneRouteTests(unittest.TestCase):
+    def test_function_path_gets_the_api_prefix_back(self):
+        import importlib.util
+        path = Path(__file__).resolve().parents[2] / "cloud-functions/api/routes.py"
+        spec = importlib.util.spec_from_file_location("edgeone_routes", path)
+        routes = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(routes)
+        self.assertEqual(routes.editor_target("/demo", ""), "/api/demo")
+        self.assertEqual(routes.editor_target("/", ""), "/api")
+        self.assertEqual(routes.editor_target("/media/decode", "name=a.png"), "/api/media/decode?name=a.png")
 
 
 if __name__ == "__main__":

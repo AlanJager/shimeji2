@@ -18,3 +18,5 @@ __pycache__/
 /tools/shimeji4mac/
 
 /output/
+/edgeone-public/
+/cloud-functions/api/runtime/

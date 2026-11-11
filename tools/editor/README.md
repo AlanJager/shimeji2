@@ -11,10 +11,13 @@
 `open -a shimeji-editor --args --port 4318` 使用独立端口（浏览器草稿按端口隔离）。
 一体 DMG 的构建方法见 `docs/release.md`。
 
-需要 Python 3.9+ 和 Pillow；动图与图集解码在本机 Python 服务中完成，WebP 需要 Pillow 带有 WebP 支持（本机验证版本为 12.3.0）。3D 库已随源码在 `vendor/` 中本地打包，使用时无需 npm 或 CDN。服务仅监听 127.0.0.1，不提供整个仓库的文件访问。
+不安装 Python 时，用 Rust 二进制 `shimeji-editor`。它在本机完成解码和导出，只监听 127.0.0.1，并把上面的页面交给浏览器。仓库里可执行 `cargo build -p shimeji-editor --release`，然后 `target/release/shimeji-editor --open`。发给别人时，压缩包里带有页面、内置 shime 和素材目录，双击「启动编辑器」即可，对方不需要 Python 或 Pillow。Windows 包由 `scripts/build-editor-windows.sh` 交叉编译。线上 Vercel 仍使用 Python。
+
+需要 Python 3.9+ 和 Pillow 的是开发服务和 Vercel；动图与图集解码在本机 Python 服务中完成，WebP 需要 Pillow 带有 WebP 支持（本机验证版本为 12.3.0）。3D 库已随源码在 `vendor/` 中本地打包，使用时无需 npm 或 CDN。服务仅监听 127.0.0.1，不提供整个仓库的文件访问。
 
 ```sh
 ./scripts/editor.command
+# Windows 解压后双击 scripts\editor.bat，或仓库里的同名文件
 # 或不自动打开浏览器
 python3 tools/editor/server.py
 # 如缺少 Pillow
@@ -33,6 +36,12 @@ python3 -m pip install Pillow
 - 素材目录只展示来源说明，服务器不代下载角色包。
 - 工程保存在各人的浏览器里，服务器不保存角色、设置或上传的原文件。
 - 只有打开这个站点的页面能调用接口；别的网站不能拿它做转发。
+
+## 部署到 EdgeOne Makers
+
+在腾讯云导入 GitHub 仓库 `AlanJager/shimeji2`，分支 `main`。根目录用 `./`，构建命令 `sh scripts/prepare-edgeone.sh`，输出目录 `edgeone-public`。不要套用 Next 或其他前端框架预设。`edgeone.json` 写的是同一组配置。
+
+页面和内置 shime 图片由静态目录提供。`/api/*` 走 Python 3.10 函数，限制与 Vercel 相同：单次 4 MB，素材目录不代下载角色包。本机大文件仍用 `shimeji-editor` 二进制。
 
 ## 制作多部件动作
 

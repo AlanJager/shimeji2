@@ -8,6 +8,7 @@ import base64
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import re
 import stat
@@ -18,7 +19,7 @@ from urllib.request import Request, urlopen
 import xml.etree.ElementTree as ET
 import zipfile
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(os.environ["SHIMEJI_EDITOR_ROOT"]) if os.environ.get("SHIMEJI_EDITOR_ROOT") else Path(__file__).resolve().parents[2]
 CATALOG = ROOT / "assets/catalog/sources.json"
 CACHE = ROOT / "output/material-catalog/cache"
 MAX_ARCHIVE = 64 * 1024 * 1024
