@@ -20,3 +20,4 @@ __pycache__/
 /output/
 /edgeone-public/
 /cloud-functions/api/runtime/
+/cloud-functions/api/editor/

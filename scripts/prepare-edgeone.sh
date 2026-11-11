@@ -1,18 +1,14 @@
 #!/bin/sh
-# Stage the EdgeOne static site and the Python files the function reads.
+# Stage the static site and the Python files the function builder packages.
 set -eu
 cd "$(dirname "$0")/.."
 
 public=edgeone-public
-runtime=cloud-functions/api/runtime
-rm -rf "$public" "$runtime"
-mkdir -p "$public/assets" "$runtime/tools/editor" "$runtime/assets/catalog" "$runtime/assets/packs"
+editor=cloud-functions/api/editor
+rm -rf "$public" "$editor"
+mkdir -p "$public/assets"
 
-for name in server.py media.py parts.py catalog.py dance.py; do
-    cp "tools/editor/$name" "$runtime/tools/editor/$name"
-done
-cp -R assets/packs/shime "$runtime/assets/packs/shime"
-cp assets/catalog/sources.json "$runtime/assets/catalog/sources.json"
+python3 scripts/stage-edgeone-editor.py
 cp assets/packs/shime/img/shime*.png "$public/assets/"
 
 find tools/editor -type f \
@@ -30,5 +26,7 @@ done
 
 test -f "$public/index.html"
 test -f "$public/assets/shime1.png"
-test -f "$runtime/assets/packs/shime/conf/動作.xml"
-test -f "$runtime/assets/catalog/sources.json"
+test -f "$editor/server.py"
+test -f "$editor/blobs.py"
+test -f "$editor/assets/catalog/sources.json"
+grep -q '動作.xml' "$editor/blobs.py"

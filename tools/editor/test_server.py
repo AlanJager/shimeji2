@@ -292,15 +292,54 @@ class Call(server.Handler):
 
 
 class EdgeOneRouteTests(unittest.TestCase):
-    def test_function_path_gets_the_api_prefix_back(self):
+    def entry(self):
         import importlib.util
-        path = Path(__file__).resolve().parents[2] / "cloud-functions/api/routes.py"
-        spec = importlib.util.spec_from_file_location("edgeone_routes", path)
-        routes = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(routes)
-        self.assertEqual(routes.editor_target("/demo", ""), "/api/demo")
-        self.assertEqual(routes.editor_target("/", ""), "/api")
-        self.assertEqual(routes.editor_target("/media/decode", "name=a.png"), "/api/media/decode?name=a.png")
+        path = Path(__file__).resolve().parents[2] / "cloud-functions/api/index.py"
+        spec = importlib.util.spec_from_file_location("edgeone_index", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return path, module
+
+    def test_entry_is_a_handler_class_the_scanner_can_see(self):
+        path, module = self.entry()
+        source = path.read_text(encoding="utf-8")
+        self.assertRegex(source, r"(?m)^class handler\(BaseHTTPRequestHandler\):")
+        self.assertRegex(source, r"(?m)^    def do_GET\(")
+        self.assertRegex(source, r"(?m)^    def do_POST\(")
+        self.assertNotRegex(source, r"(?m)^app\s*=")
+        self.assertNotRegex(source, r"(?m)^import server$")
+        self.assertTrue(issubclass(module.handler, __import__("http").server.BaseHTTPRequestHandler))
+
+    def test_either_path_shape_reaches_the_editor_route(self):
+        _path, module = self.entry()
+        self.assertEqual(module.editor_path("/api/demo"), "/api/demo")
+        self.assertEqual(module.editor_path("/demo"), "/api/demo")
+        self.assertEqual(module.editor_path("/"), "/api")
+        self.assertEqual(module.editor_path("/media/decode?name=a.png"), "/api/media/decode?name=a.png")
+
+    def test_staged_function_serves_the_demo_and_refuses_catalog_download(self):
+        import subprocess
+        import sys
+        root = Path(__file__).resolve().parents[2]
+        subprocess.check_call([sys.executable, "scripts/stage-edgeone-editor.py"], cwd=root)
+        probe = r'''
+import io, json, sys
+sys.path.insert(0, "cloud-functions/api")
+import index
+headers = {"Host": "editor.example", "Origin": "https://editor.example", "Content-Length": "2"}
+status, _response_headers, body = index.serve("GET", "/api/demo", headers, None)
+if status != 200:
+    raise SystemExit(f"demo {status} {body[:200]!r}")
+if json.loads(body)["actions"][0]["id"] != "idle":
+    raise SystemExit("demo action")
+status, _response_headers, body = index.serve("POST", "/catalog/open", headers, io.BytesIO(b"{}"))
+if status != 400 or "不代下载" not in body.decode():
+    raise SystemExit(f"catalog {status} {body!r}")
+print("ok")
+'''
+        completed = subprocess.run([sys.executable, "-c", probe], cwd=root, capture_output=True, text=True)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("ok", completed.stdout)
 
 
 if __name__ == "__main__":

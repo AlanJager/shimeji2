@@ -41,7 +41,7 @@ python3 -m pip install Pillow
 
 在腾讯云导入 GitHub 仓库 `AlanJager/shimeji2`，分支 `main`。根目录用 `./`，构建命令 `sh scripts/prepare-edgeone.sh`，输出目录 `edgeone-public`。不要套用 Next 或其他前端框架预设。`edgeone.json` 写的是同一组配置。
 
-页面和内置 shime 图片由静态目录提供。`/api/*` 走 Python 3.10 函数，限制与 Vercel 相同：单次 4 MB，素材目录不代下载角色包。本机大文件仍用 `shimeji-editor` 二进制。
+页面和内置 shime 图片由静态目录提供。`/api/*` 由 `cloud-functions/api/index.py` 这个 Python 3.10 函数处理，限制与 Vercel 相同：单次 4 MB，素材目录不代下载角色包。本机大文件仍用 `shimeji-editor` 二进制。构建日志里应出现 `Found` 和 `Python functions`，随后才会安装 Pillow。
 
 ## 制作多部件动作
 
