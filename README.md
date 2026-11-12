@@ -6,6 +6,10 @@ English · [简体中文](README.zh-CN.md)
 
 <p align="center"><img src="packaging/icons/shimeji2.png" width="160" alt="shimeji2 application icon"></p>
 
+<p align="center"><img src="docs/editor-lie-down.gif" width="960" alt="Building a lie-down animation in the shimeji2 action editor"></p>
+
+The [action editor](tools/editor/README.md) runs in the browser. The clip builds a lie-down for the bundled white shime: stand, sit, tip over, then rest.
+
 > [!NOTE]
 > **Public beta: v0.1.0-beta.1.** The app itself reports version 0.1.0.
 > - **Platform.** Apple Silicon Macs running macOS 14 or later. So far it has been built and run only on the maintainer's Mac (macOS 15). Intel Macs are not a target of this beta.

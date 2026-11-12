@@ -6,6 +6,10 @@
 
 <p align="center"><img src="packaging/icons/shimeji2.png" width="160" alt="shimeji2 应用图标"></p>
 
+<p align="center"><img src="docs/editor-lie-down.gif" width="960" alt="在 shimeji2 动作编辑器里把站着的 shime 编成躺下"></p>
+
+浏览器里的[动作编辑器](tools/editor/README.md)可以直接改角色动作。上面这段把自带的白色 shime 从站着编成躺下：坐下、侧倒，再趴好。
+
 > [!NOTE]
 > **公开测试版：v0.1.0-beta.1**（应用内显示的版本号为 0.1.0）。
 > - **平台：** Apple Silicon Mac，macOS 14 及以上。目前只在维护者自己的 Mac（macOS 15）上构建和运行过。本测试版不面向 Intel Mac。
